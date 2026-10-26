@@ -17,8 +17,19 @@ def _configure_app_logger() -> logging.Logger:
     app_logger.setLevel(settings.LOG_LEVEL.upper())
     app_logger.propagate = False
 
-    for logger_name in ("httpx", "httpx2", "httpcore"):
-        logging.getLogger(logger_name).setLevel(logging.WARNING)
+    for logger_name in (
+        "httpx",
+        "httpx2",
+        "httpcore",
+        "docling",
+        "docling_core",
+        "docling_ibm_models",
+        "docling_parse",
+        "rapidocr",
+        "easyocr",
+        "pdfminer",
+    ):
+        logging.getLogger(logger_name).setLevel(logging.ERROR)
 
     return app_logger
 

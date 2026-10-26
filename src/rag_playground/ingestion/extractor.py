@@ -1,3 +1,4 @@
+import logging
 import re
 import unicodedata
 from pathlib import Path
@@ -22,6 +23,9 @@ from rag_playground.ingestion.ocr_factory import (
     get_default_ocr_options,
     get_ocr_config,
 )
+
+for _docling_logger in ("docling", "docling_core", "docling_ibm_models", "docling_parse"):
+    logging.getLogger(_docling_logger).setLevel(logging.ERROR)
 
 logger = get_logger(__name__)
 
