@@ -1,0 +1,29 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.gemini/
+
+# Virtual environments
+.venv
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# secrets
+.env
+
+# logs
+*.log
+
+doc/
+docs/
+data/documents
+
+# cache
+.cache/
+_manim_work/
+.ruff_cache/

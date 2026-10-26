@@ -1,0 +1,37 @@
+services:
+  qdrant:
+    image: qdrant/qdrant
+    container_name: rag_qdrant
+    restart: unless-stopped
+    environment:
+      - QDRANT__LOG_LEVEL=${QDRANT_LOG_LEVEL:-WARN}
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+
+  app:
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: rag_app
+    env_file: .env
+    environment:
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: "6333"
+      QDRANT_GRPC_PORT: "6334"
+      ANIMATIONS_DIR: /app/data/animations
+    depends_on:
+      - qdrant
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./data/documents:/app/data/documents
+      - ./data/evaluation:/app/data/evaluation
+      - ./notebooks:/app/notebooks
+      - ./manimations:/app/manimations
+
+volumes:
+  qdrant_storage:
+  hf_cache:
