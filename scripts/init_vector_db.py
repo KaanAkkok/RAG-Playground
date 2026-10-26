@@ -52,7 +52,7 @@ async def init_vector_db(
     retriever: RetrievalService,
     document_paths: list[Path],
     collection_name: str = settings.QDRANT_KNOWLEDGE_COLLECTION_NAME,
-    save_citations: bool = True,
+    save_citations: bool = False,
     output_json_path: Path | None = None,
 ):
     logger.info("Indexleme işlemi başlatılıyor...")
@@ -149,6 +149,6 @@ async def initilize_vector_db():
         retriever=retriever,
         document_paths=document_paths,
         collection_name=settings.QDRANT_KNOWLEDGE_COLLECTION_NAME,
-        save_citations=True,
-        output_json_path=Path("data/citations.json"),
+        save_citations=False,
+        output_json_path=None,
     )
