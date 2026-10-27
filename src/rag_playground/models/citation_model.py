@@ -11,7 +11,6 @@ class Citation:
     paragraph: int = 0
     sentences: int = 0
     text_length: int = 0
-    level: str = ""
     breadcrumb: str = ""
     text: str = ""
     rrf_score: float = 0.0

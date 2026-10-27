@@ -6,7 +6,7 @@
       "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka"
     ],
     "related_chunks": [
-      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_4"
+      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_5"
     ],
     "expected_keywords": [
       "büyük veri",
@@ -23,7 +23,8 @@
       "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka"
     ],
     "related_chunks": [
-      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_11"
+      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_15",
+      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_16"
     ],
     "expected_keywords": [
       "2003",
@@ -42,8 +43,8 @@
       "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka"
     ],
     "related_chunks": [
-      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_29",
-      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_30"
+      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_39",
+      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_40"
     ],
     "expected_keywords": [
       "GOFAI",
@@ -61,8 +62,9 @@
       "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka"
     ],
     "related_chunks": [
-      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_32",
-      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_33"
+      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_44",
+      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_45",
+      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_46"
     ],
     "expected_keywords": [
       "bağlamsal adaptasyon",
@@ -78,7 +80,7 @@
       "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka"
     ],
     "related_chunks": [
-      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_35"
+      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_47"
     ],
     "expected_keywords": [
       "Kural Tabanlı Uzman Sistemler",
@@ -94,7 +96,7 @@
       "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka"
     ],
     "related_chunks": [
-      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_42"
+      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_58"
     ],
     "expected_keywords": [
       "gözetimsiz öğrenme",
@@ -113,7 +115,7 @@
       "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka"
     ],
     "related_chunks": [
-      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_47"
+      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_63"
     ],
     "expected_keywords": [
       "Görüntü analizi",
@@ -128,7 +130,7 @@
       "AS19_Sayi-RAG-Sistemlerine-Giris"
     ],
     "related_chunks": [
-      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_17"
+      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_19"
     ],
     "expected_keywords": [
       "2020",
@@ -145,9 +147,8 @@
       "AS19_Sayi-RAG-Sistemlerine-Giris"
     ],
     "related_chunks": [
-      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_17",
-      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_24",
-      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_25"
+      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_21",
+      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_27"
     ],
     "expected_keywords": [
       "Bölütleme",
@@ -165,8 +166,9 @@
       "AS19_Sayi-RAG-Sistemlerine-Giris"
     ],
     "related_chunks": [
-      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_30",
-      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_31"
+      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_33",
+      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_34",
+      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_35"
     ],
     "expected_keywords": [
       "Sabit Uzunlukta Parçalama",
@@ -182,8 +184,8 @@
       "AS19_Sayi-RAG-Sistemlerine-Giris"
     ],
     "related_chunks": [
-      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_33",
-      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_34"
+      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_38",
+      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_39"
     ],
     "expected_keywords": [
       "Kosinüs Benzerliği",
@@ -198,8 +200,8 @@
       "AS19_Sayi-RAG-Sistemlerine-Giris"
     ],
     "related_chunks": [
-      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_35",
-      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_36"
+      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_40",
+      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_41"
     ],
     "expected_keywords": [
       "bağlam penceresi",
@@ -216,9 +218,9 @@
       "AS19_Sayi-RAG-Sistemlerine-Giris"
     ],
     "related_chunks": [
-      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_38",
-      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_40",
-      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_41"
+      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_43",
+      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_45",
+      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_46"
     ],
     "expected_keywords": [
       "LlamaIndex",
@@ -235,9 +237,9 @@
       "AS19_Sayi-RAG-Sistemlerine-Giris"
     ],
     "related_chunks": [
-      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_51",
-      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_61",
-      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_66"
+      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_58",
+      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_68",
+      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_73"
     ],
     "expected_keywords": [
       "2017",
@@ -254,7 +256,7 @@
       "AS19_Sayi-RAG-Sistemlerine-Giris"
     ],
     "related_chunks": [
-      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_24"
+      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_26"
     ],
     "expected_keywords": [
       "Cümle Parçacığı Kodlama",
@@ -272,7 +274,8 @@
       "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka"
     ],
     "related_chunks": [
-      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_36"
+      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_49",
+      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_50"
     ],
     "expected_keywords": [
       "Bulanık Mantık",
@@ -290,7 +293,8 @@
       "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka"
     ],
     "related_chunks": [
-      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_39"
+      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_54",
+      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_55"
     ],
     "expected_keywords": [
       "gözetimli öğrenme",
@@ -306,10 +310,9 @@
       "AS19_Sayi-RAG-Sistemlerine-Giris"
     ],
     "related_chunks": [
-      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_63",
-      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_64",
-      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_66",
-      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_67"
+      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_70",
+      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_71",
+      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_74"
     ],
     "expected_keywords": [
       "591",
@@ -326,7 +329,7 @@
       "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka"
     ],
     "related_chunks": [
-      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_50"
+      "TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka_chunk_65"
     ],
     "expected_keywords": [
       "Evrişimsel Sinir Ağları",
@@ -343,8 +346,8 @@
       "AS19_Sayi-RAG-Sistemlerine-Giris"
     ],
     "related_chunks": [
-      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_27",
-      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_69"
+      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_29",
+      "AS19_Sayi-RAG-Sistemlerine-Giris_chunk_76"
     ],
     "expected_keywords": [
       "ince ayarlama",

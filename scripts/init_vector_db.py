@@ -121,14 +121,13 @@ async def init_vector_db(
 
 # =============================================================================================
 
-import asyncio
 
 from rag_playground.core.settings import settings
 from rag_playground.llm.llm_factory import LLMFactory
 from rag_playground.retrieval.embedding_service import AzureEmbeddingService
 from rag_playground.retrieval.vector_db import AsyncQdrantVectorDB
 
-async def initilize_vector_db():
+async def initilize_vector_db(save_citations: bool = False, output_json_path: Path | None = None):
     client = LLMFactory.create()
     document_io = DocumentIO()
     extractor = DocumentExtractor()
@@ -149,6 +148,7 @@ async def initilize_vector_db():
         retriever=retriever,
         document_paths=document_paths,
         collection_name=settings.QDRANT_KNOWLEDGE_COLLECTION_NAME,
-        save_citations=False,
-        output_json_path=None,
+        save_citations=save_citations,
+        output_json_path=output_json_path,
     )
+
