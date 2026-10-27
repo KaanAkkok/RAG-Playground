@@ -1,5 +1,6 @@
 import hashlib
 import re
+import numpy as np
 import unicodedata
 from hashlib import sha256
 from pathlib import Path
@@ -19,12 +20,13 @@ HEADING_RE = re.compile(r"^(#{1,6})\s+(.*\S)\s*$")
 TABLE_ROW_RE = re.compile(r"^\s*\|.*\|\s*$")
 INVISIBLE_RE = re.compile(r"[\u200b\u200c\u200d\ufeff]")
 IMAGE_TAG_RE = re.compile(r"<!-- image -->")
-HYPHEN_BREAK_RE = re.compile(r"(?<=\w)-\n(?=[a-zçğıöşü])")
+HYPHEN_BREAK_RE = re.compile(r"(?<=\w)-\n(?=\w)")
 
 
 def clean_markdown(md: str) -> str:
     text = unicodedata.normalize("NFC", md)
     text = text.replace("\r", "")
+    text = text.replace("", "")
     text = INVISIBLE_RE.sub("", text)
     text = HYPHEN_BREAK_RE.sub("", text)
     text = IMAGE_TAG_RE.sub("", text)
@@ -43,12 +45,16 @@ class DocumentChunker:
         sentence_overlap_ratio: float = settings.SENTENCE_OVERLAP_RATIO,
         semantic_chunking_break_percentage: float = settings.SEMANTIC_CHUNKING_BREAK_PERCENTAGE,
         semantic_chunking_min_dist: float = settings.SEMANTIC_CHUNKING_MIN_DIST,
+        semantic_chunking_buffer_size: int = settings.SEMANTIC_CHUNKING_BUFFER_SIZE,
+        semantic_chunking_min_sentences: int = settings.SEMANTIC_CHUNKING_MIN_SENTENCES,
     ):
         self.max_chunk_chars = max_chunk_chars
         self.min_chunk_chars = min_chunk_chars
         self.sentence_overlap_ratio = sentence_overlap_ratio
         self.semantic_chunking_break_percentage = semantic_chunking_break_percentage
         self.semantic_chunking_min_dist = semantic_chunking_min_dist
+        self.semantic_chunking_buffer_size = semantic_chunking_buffer_size
+        self.semantic_chunking_min_sentences = semantic_chunking_min_sentences
         self.embedder = embedder
         self.currend_document_name_hash = ""
         self.current_chunk_id = 1
@@ -152,6 +158,8 @@ class DocumentChunker:
         return chunks
 
     def _add_overlap(self, groups: list[list[str]]) -> list[list[str]]:
+        if self.sentence_overlap_ratio <= 0:
+            return groups
         for i in range(1, len(groups)):
             overlap_count = max(
                 1, int(len(groups[i - 1]) * self.sentence_overlap_ratio)
@@ -162,30 +170,39 @@ class DocumentChunker:
                 groups[i] = candidate
         return groups
 
+    def _buffer_sentences(self, sentences: list[str]) -> list[str]:
+        # embed each sentence together with its neighbours to reduce noise
+        b = self.semantic_chunking_buffer_size
+        if b <= 0:
+            return sentences
+        return [
+            " ".join(sentences[max(0, i - b) : i + b + 1]) for i in range(len(sentences))
+        ]
+
     async def _semantic_split(self, sentences: list[str]) -> list[list[str]]:
-        if not sentences:
-            return []
-        if len(" ".join(sentences)) <= self.max_chunk_chars:
-            return [sentences]
+        if len(sentences) < self.semantic_chunking_min_sentences:
+            return self._add_overlap(
+                self._merge_small_groups(self._pack_by_size(sentences))
+            )
         try:
-            embeddings = await self.embedder.embed_texts(sentences)
+            buffered_sentences = self._buffer_sentences(sentences)
+            embeddings = await self.embedder.embed_texts(buffered_sentences)
         except EmbeddingError:
             logger.exception(
                 "Error embedding sentences, falling back to size-based chunking"
             )
-            return self._pack_by_size(sentences)
+            return self._add_overlap(self._merge_small_groups(self._pack_by_size(sentences)))
 
         distances = [
             (1 - cosine_similarity(embeddings[i], embeddings[i + 1]))
             for i in range(len(embeddings) - 1)
         ]
-        ordered = sorted(distances)
-        threshold = ordered[
-            min(
-                int(len(ordered) * self.semantic_chunking_break_percentage),
-                len(ordered) - 1,
+        threshold = float(
+            np.percentile(
+                distances,
+                self.semantic_chunking_break_percentage*100,
             )
-        ]
+        )
 
         groups: list[list[str]] = [[sentences[0]]]
         for i, distance in enumerate(distances):
@@ -193,18 +210,8 @@ class DocumentChunker:
                 groups.append([])
             groups[-1].append(sentences[i + 1])
 
-        merged_groups: list[list[str]] = []
-        for group in groups:
-            if (
-                merged_groups
-                and len(" ".join(merged_groups[-1] + group)) <= self.max_chunk_chars
-            ):
-                merged_groups[-1].extend(group)
-            else:
-                merged_groups.append(group)
-
         chunks: list[list[str]] = []
-        for group in merged_groups:
+        for group in groups:
             if len(" ".join(group)) <= self.max_chunk_chars:
                 chunks.append(group)
             else:
@@ -251,15 +258,12 @@ class DocumentChunker:
             document_path = Path(document_path)
         chunks: list[Citation] = []
         path: list[str] = []
-        level_path_list: list[str] = []
         pending: list[str] = []
-
-        level_path_list.append(document_path.stem)
 
         def hash_string(s: str) -> str:
             return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
-        def emit(body: str, level: str, sentence_count: int = 1, page: int = 1) -> None:
+        def emit(body: str, sentence_count: int = 1, page: int = 1) -> None:
             old_hash = self.currend_document_name_hash
             new_hash = hash_string(str(document_path.stem))
             if old_hash != new_hash:
@@ -268,7 +272,7 @@ class DocumentChunker:
             else:
                 self.current_chunk_id += 1
             breadcrumb = " > ".join(p for p in path if p)
-            text = f"{breadcrumb}\n\n{body}" if breadcrumb else body
+            text = f"{breadcrumb} | \n\n{body}" if breadcrumb else body
             chunks.append(
                 Citation(
                     document_id=sha256(
@@ -280,7 +284,6 @@ class DocumentChunker:
                     paragraph=len(chunks) + 1,
                     sentences=sentence_count,
                     text_length=len(text),
-                    level=level,
                     breadcrumb=breadcrumb,
                     text=text,
                     doc_type=document_path.suffix[1:],
@@ -289,12 +292,12 @@ class DocumentChunker:
                 )
             )
 
-        async def flush(page: int, level: str) -> None:
+        async def flush(page: int) -> None:
             if not pending:
                 return
             grouped = await self._semantic_split(list(pending))
             for group in grouped:
-                emit(" ".join(group), level, len(group), page)
+                emit(" ".join(group), len(group), page)
             pending.clear()
 
         page_contents = self.catch_page_breaks(content)
@@ -303,22 +306,18 @@ class DocumentChunker:
             total_lines = max(len(page_content.splitlines()), 1)
             processed_lines = 0
             last_logged_percentage = 0
-            level_path = " > ".join(level_path_list)
             for block in blocks:
-                level_path = " > ".join(path for path in level_path_list)
                 if block["type"] == "heading":
-                    await flush(page=page_number, level=level_path)
+                    await flush(page=page_number)
                     level = block["level"]
-                    level_path_list.append(block["content"])
                     del path[level - 1 :]
                     path.extend([""] * (level - 1 - len(path)))
                     path.append(block["content"])
                 elif block["type"] == "table":
-                    await flush(page=page_number, level=level_path)
+                    await flush(page=page_number)
                     for table_chunk in self._split_table(block["content"]):
                         emit(
                             table_chunk,
-                            level_path,
                             len(self._split_sentence(table_chunk)),
                             page_number,
                         )
@@ -337,7 +336,7 @@ class DocumentChunker:
                         f"{len(chunks)} chunks emitted"
                     )
 
-            await flush(page=page_number, level=level_path)
+            await flush(page=page_number)
 
         logger.info(
             f"Chunking completed for {document_path.name}: "

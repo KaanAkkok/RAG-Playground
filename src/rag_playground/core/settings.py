@@ -69,17 +69,19 @@ class Settings(BaseSettings):
     ANIMATIONS_DIR: str = (PROJECT_ROOT / "data" / "animations").as_posix()
     EMBED_BATCH_SIZE: int = 96
     MIN_CHUNK_CHARS: int = 260
-    MAX_CHUNK_CHARS: int = 900
+    MAX_CHUNK_CHARS: int = 700
     SENTENCE_OVERLAP_RATIO: float = Field(default=0.2, ge=0.0, le=1.0)
     SEMANTIC_CHUNKING_BREAK_PERCENTAGE: float = Field(default=0.85, ge=0.0, le=1.0)
     SEMANTIC_CHUNKING_MIN_DIST: float = Field(default=0.2, ge=0.0, le=1.0)
+    SEMANTIC_CHUNKING_BUFFER_SIZE: int = Field(default=1, ge=0, le=5)
+    SEMANTIC_CHUNKING_MIN_SENTENCES: int = Field(default=5, ge=2, le=20)
     VECTORDB_UPSERT_BATCH_SIZE: int = 128
     SEARCH_CANDIDATES: int = 25
     FUSED_SEARCH_CANDIDATES: int = 10
     TOP_K_CANDIDATES: int = 5
     EVALUATION_LIMIT: int = 5
     MIN_RERANK_SCORE: int = Field(default=3, ge=0, le=10)
-    RERANK_PASSAGE_CHARS: int = Field(default=900, ge=100, le=1000)
+    RERANK_PASSAGE_CHARS: int = Field(default=700, ge=100, le=1000)
 
     INTENT_SYSTEM_PROMPT_PATH: str = str(_PROMPTS_DIR / "INTENT_PROMPT.md")
     ASSISTANT_SYSTEM_PROMPT_PATH: str = str(_PROMPTS_DIR / "ASSISTANT_PROMPT.md")
