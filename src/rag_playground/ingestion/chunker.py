@@ -47,6 +47,7 @@ class DocumentChunker:
         semantic_chunking_min_dist: float = settings.SEMANTIC_CHUNKING_MIN_DIST,
         semantic_chunking_buffer_size: int = settings.SEMANTIC_CHUNKING_BUFFER_SIZE,
         semantic_chunking_min_sentences: int = settings.SEMANTIC_CHUNKING_MIN_SENTENCES,
+        process_logging: bool = False,
     ):
         self.max_chunk_chars = max_chunk_chars
         self.min_chunk_chars = min_chunk_chars
@@ -56,6 +57,7 @@ class DocumentChunker:
         self.semantic_chunking_buffer_size = semantic_chunking_buffer_size
         self.semantic_chunking_min_sentences = semantic_chunking_min_sentences
         self.embedder = embedder
+        self.process_logging = process_logging
         self.currend_document_name_hash = ""
         self.current_chunk_id = 1
 
@@ -324,17 +326,17 @@ class DocumentChunker:
                 else:
                     pending.extend(self._split_sentence(block["content"]))
 
-                processed_lines += len(block["content"].splitlines())
-                percentage = min(processed_lines / total_lines * 100, 100)
-
-                milestone = int(percentage // 20) * 20
-                if milestone >= last_logged_percentage + 20:
-                    last_logged_percentage = milestone
-                    logger.info(
-                        f"Chunking progress for {document_path.name} (page {page_number}): "
-                        f"{percentage:.1f}% of page processed, "
-                        f"{len(chunks)} chunks emitted"
-                    )
+                if self.process_logging:
+                    processed_lines += len(block["content"].splitlines())
+                    percentage = min(processed_lines / total_lines * 100, 100)
+                    milestone = int(percentage // 20) * 20
+                    if milestone >= last_logged_percentage + 20:
+                        last_logged_percentage = milestone
+                        logger.info(
+                            f"Chunking progress for {document_path.name} (page {page_number}): "
+                            f"{percentage:.1f}% of page processed, "
+                            f"{len(chunks)} chunks emitted"
+                        )
 
             await flush(page=page_number)
 
