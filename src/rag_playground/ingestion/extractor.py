@@ -61,9 +61,11 @@ class DocumentExtractor:
         force_backend_text: bool = False,
         image_scale: float = 3.0,
         ocr_factory: OCRFactory | None = None,
-        layout_enabled: bool = False,
-        table_enabled: bool = False,
-        do_cell_matching: bool = False,
+        layout_enabled: bool = True,
+        table_enabled: bool = True,
+        do_cell_matching: bool = True,
+        do_formula_enrichment: bool = True,
+        generate_picture_images: bool = False,
     ):
         self.ocr_enabled = ocr_enabled
         self.force_backend_text = force_backend_text
@@ -72,6 +74,8 @@ class DocumentExtractor:
         self.layout_enabled = layout_enabled
         self.table_enabled = table_enabled
         self.do_cell_matching = do_cell_matching
+        self.do_formula_enrichment = do_formula_enrichment
+        self.generate_picture_images = generate_picture_images
         self.ocr_options: OcrOptions | None = None
 
     def _build_pdf_pipeline(self, do_ocr: bool | None = None) -> PdfPipelineOptions:
@@ -82,10 +86,11 @@ class DocumentExtractor:
                 self.ocr_options = get_ocr_config(self.ocr_factory)
         pipeline_options = PdfPipelineOptions(
             do_ocr=self.ocr_enabled if do_ocr is None else do_ocr,
-            do_table_structure=False,
+            do_table_structure=self.table_enabled,
+            do_formula_enrichment=self.do_formula_enrichment,
             force_backend_text=self.force_backend_text,
             ocr_options=self.ocr_options,
-            generate_picture_images=False,
+            generate_picture_images=self.generate_picture_images,
             images_scale=self.image_scale,
         )
         if self.layout_enabled:

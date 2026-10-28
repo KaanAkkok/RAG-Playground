@@ -51,8 +51,8 @@ class GuardrailsService:
     def __init__(
         self,
         mode: Literal["strict", "lenient", "loose"] = "strict",
-        add_pattern: re.Pattern | None = None,
-        proprietary_dictionary: set[str] | None = None,
+        regex_patterns: list[re.Pattern] | None = None,
+        proprietary_dictionary: list[str] | None = None,
         normalization_form: Literal["NFC", "NFD", "NFKC", "NFKD"] = "NFKC",
         llm_as_judge_enabled: bool = True,
         client: LLMClient | None = None,
@@ -62,8 +62,8 @@ class GuardrailsService:
         response_format: dict | None = LLM_GUARDRAILS_FORMAT,
     ):
         self.mode = mode
-        self.add_re = add_pattern
-        self.proprietary_dictionary = proprietary_dictionary or set()
+        self.regex_patterns_list = regex_patterns
+        self.proprietary_dictionary = set(proprietary_dictionary) if proprietary_dictionary else set()
         self.llm_as_judge_prompt = llm_as_judge_prompt
         self.guardrails_deployment = guardrails_deployment
         self.guardrails_client = client
@@ -101,13 +101,13 @@ class GuardrailsService:
             _TEXT_PHONE_RE,
             _TEXT_CARD_RE,
         ]
-        if self.add_re is not None:
+        if self.regex_patterns_list is not None:
             if self.mode == "strict":
-                self.strict.append(self.add_re)
+                self.strict.extend(self.regex_patterns_list)
             elif self.mode == "lenient":
-                self.lenient.append(self.add_re)
+                self.lenient.extend(self.regex_patterns_list)
             elif self.mode == "loose":
-                self.loose.append(self.add_re)
+                self.loose.extend(self.regex_patterns_list)
             else:
                 raise ValueError(
                     f"Invalid mode: {self.mode}. Must be 'strict', 'lenient', or 'loose'."
@@ -206,6 +206,7 @@ class GuardrailsService:
         for word in sorted(self.proprietary_dictionary, key=len, reverse=True):
             if not word:
                 continue
+            word = word.strip().lower()
             pattern = re.compile(re.escape(word), re.IGNORECASE)
             matches = list(pattern.finditer(text))
             for match in reversed(matches):
