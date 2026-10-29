@@ -65,6 +65,7 @@ class GuardrailsService:
         guardrails_deployment: str | None = settings.llm_models.guardrails,
         llm_as_judge_prompt: str | None = LLM_AS_JUDGE_PROMPT,
         response_format: dict | None = LLM_GUARDRAILS_FORMAT,
+        timeout: int | None = settings.LLM_RESPONSE_TIMEOUT,
     ):
         self.mode = mode
         self.regex_patterns_list = regex_patterns
@@ -78,6 +79,7 @@ class GuardrailsService:
         self.response_format = (
             ResponseFormat(**response_format) if response_format else None
         )
+        self.timeout = timeout
         self.llm_as_judge_enabled = llm_as_judge_enabled
         self.normalization_form: Literal["NFC", "NFD", "NFKC", "NFKD"] = (
             normalization_form
@@ -121,9 +123,9 @@ class GuardrailsService:
                 raise ValueError(
                     f"Invalid mode: {self.mode}. Must be 'strict', 'lenient', or 'loose'."
                 )
-        self._validate_judge_configuration()
+        self._validate_config()
 
-    def _validate_judge_configuration(self):
+    def _validate_config(self):
         if self.llm_as_judge_enabled:
             if self.guardrails_client is None:
                 raise ValueError(
@@ -136,6 +138,10 @@ class GuardrailsService:
             if not self.response_format:
                 raise ValueError(
                     "Response format must be provided when llm_as_judge_enabled is True."
+                )
+            if not self.timeout:
+                raise ValueError(
+                    "Timeout must be provided when llm_as_judge_enabled is True."
                 )
 
     @staticmethod
@@ -267,6 +273,7 @@ class GuardrailsService:
             messages=messages,
             temperature=self.temperature,
             response_format=response_format,
+            timeout=self.timeout,
         )
         try:
             response = await self.guardrails_client.generate_response(request)

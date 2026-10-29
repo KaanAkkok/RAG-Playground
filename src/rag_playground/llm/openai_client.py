@@ -88,7 +88,7 @@ class OpenAIClient(LLMClient):
     @override
     def _build_embedding_params(self, request: EmbeddingRequest) -> dict[str, Any]:
         params = request.model_dump(
-            include={"model", "input", "dimensions"}, exclude_none=True
+            include={"model", "input", "dimensions", "timeout"}, exclude_none=True
         )
         params.update(request.provider_options)
         return params

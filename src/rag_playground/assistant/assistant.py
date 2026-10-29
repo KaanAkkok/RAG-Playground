@@ -45,8 +45,9 @@ class AssistantService:
         guardrails_enabled: bool = True,
         memory_enabled: bool = True,
         model: str = settings.llm_models.chat,
-        temperature: float = settings.ASSISTANT_CHAT_TEMPERATURE,
+        temperature: float = settings.CHAT_TEMPERATURE,
         system_prompt: str = ASSISTANT_SYSTEM_PROMPT,
+        timeout: int = settings.LLM_RESPONSE_TIMEOUT,
     ):
         self.guardrails_enabled = guardrails_enabled
         self.guardrails = guardrails
@@ -58,19 +59,16 @@ class AssistantService:
         self.model = model
         self.temperature = temperature
         self.system_prompt = system_prompt
-        self.validate_configuration()
+        self.timeout = timeout
+        self._validate_config()
 
-    def validate_configuration(self):
+    def _validate_config(self):
         if not self.intent_classifier:
             raise ValueError("Intent classifier is not configured.")
         if not self.retriever:
             raise ValueError("Retriever is not configured.")
         if not self.client:
             raise ValueError("LLM client is not configured.")
-        if not self.model:
-            raise ValueError("Model deployment name is not configured.")
-        if not self.system_prompt:
-            raise ValueError("System prompt is not configured.")
         if not self.memory_service and self.memory_enabled:
             raise ValueError("Memory service is not configured.")
         if not self.guardrails:
@@ -225,6 +223,7 @@ class AssistantService:
             model=self.model,
             messages=messages,
             temperature=self.temperature,
+            timeout=self.timeout,
         )
         try:
             response = await self.client.generate_response(request)

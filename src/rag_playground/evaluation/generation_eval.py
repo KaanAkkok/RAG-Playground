@@ -1,13 +1,3 @@
-"""
-Generation evaluation module for RAG Playground.
-- faithfullness
-- Answer relevancy
-- Answer correctness
-- completeness
-- answer accuracy
-- noise sensitivity
-"""
-
 import asyncio
 import json
 import math
@@ -123,8 +113,9 @@ class GenerationEvaluator(EvaluationService):
         client: LLMClient,
         assistant: AssistantService,
         embedder: EmbeddingService,
-        temperature: float = settings.EVALUATION_CHAT_TEMPERATURE,
+        temperature: float = settings.EVALUATION_TEMPERATURE,
         eval_deployment: str = settings.llm_models.generation_eval,
+        timeout: int = settings.LLM_RESPONSE_TIMEOUT,
         ground_truth_path: Path | str = settings.EVALUATION_FILE,
         noise_chunks: list[VectorRecord] = NOISE_CHUNKS,
         faithfulness_prompt: str = FAITHFULNESS_PROMPT,
@@ -140,6 +131,7 @@ class GenerationEvaluator(EvaluationService):
         super().__init__(ground_truth_path)
         self.eval_deployment = eval_deployment
         self.temperature = temperature
+        self.timeout = timeout
         self.noise_chunks = noise_chunks
         self.faithfulness_prompt = faithfulness_prompt
         self.answer_relevancy_prompt = answer_relevancy_prompt
@@ -153,9 +145,9 @@ class GenerationEvaluator(EvaluationService):
         self.answer_quality_response_format = ResponseFormat(
             **answer_quality_response_format
         )
-        self._validate_params()
+        self._validate_config()
 
-    def _validate_params(self):
+    def _validate_config(self):
         if self.evaluator is None or not isinstance(self.evaluator, LLMClient):
             raise ValueError(
                 "LLM client must be provided and be an instance of LLMClient."
@@ -183,6 +175,7 @@ class GenerationEvaluator(EvaluationService):
             messages=messages,
             temperature=self.temperature,
             response_format=response_format,
+            timeout=self.timeout,
         )
         try:
             response = await self.evaluator.generate_response(request)
@@ -322,8 +315,8 @@ class GenerationEvaluator(EvaluationService):
         for field, value in required_strings.items():
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"{field} must be a non-empty string.")
-        if not isinstance(response_format, dict) or not response_format:
-            raise ValueError("response_format must be a non-empty dictionary.")
+        if not isinstance(response_format, ResponseFormat) or not response_format:
+            raise ValueError("response_format must be a non-empty ResponseFormat object.")
         weights = {
             "factual_weight": factual_weight,
             "semantic_weight": semantic_weight,
@@ -382,24 +375,6 @@ class GenerationEvaluator(EvaluationService):
             accuracy=factual_f1,
         )
 
-    async def get_answer(
-        self, query: str, citations: list[VectorRecord] | None = None
-    ) -> tuple[str, list[VectorRecord]]:
-        if not isinstance(query, str) or not query.strip():
-            raise ValueError("Query must be a non-empty string.")
-        try:
-            await asyncio.sleep(0.5)
-            response = await self.assistant.answer(
-                query, citations=citations, reset_history=True
-            )
-        except LLMGenerationError as e:
-            raise LLMGenerationError(f"Error occurred while fetching answer: {e}")
-        if not isinstance(response, AssistantResponse):
-            raise TypeError(
-                "Assistant response must be an instance of AssistantResponse."
-            )
-        return response.answer, response.citations
-
     async def noise_sensitivity(
         self, clean_quality: AnswerQualityScores, noisy_quality: AnswerQualityScores
     ) -> float:
@@ -417,6 +392,24 @@ class GenerationEvaluator(EvaluationService):
             return 0.0
         sensitivity = (clean_score - noisy_score) / clean_score
         return max(0.0, min(1.0, float(sensitivity)))
+
+    async def get_answer(
+        self, query: str, citations: list[VectorRecord] | None = None
+    ) -> tuple[str, list[VectorRecord]]:
+        if not isinstance(query, str) or not query.strip():
+            raise ValueError("Query must be a non-empty string.")
+        try:
+            await asyncio.sleep(0.5)
+            response = await self.assistant.answer(
+                query, citations=citations, reset_history=True
+            )
+        except LLMGenerationError as e:
+            raise LLMGenerationError(f"Error occurred while fetching answer: {e}")
+        if not isinstance(response, AssistantResponse):
+            raise TypeError(
+                "Assistant response must be an instance of AssistantResponse."
+            )
+        return response.answer, response.citations
 
     async def evaluate(self) -> dict[str, dict[str, float]]:
         questions = list(self.ground_truth.keys())

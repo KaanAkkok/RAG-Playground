@@ -50,7 +50,7 @@ async def init_vector_db(
     chunker: DocumentChunker,
     retriever: RetrievalService,
     document_paths: list[Path],
-    collection_name: str = settings.QDRANT_KNOWLEDGE_COLLECTION_NAME,
+    collection_name: str = settings.VECTORDB_KNOWLEDGE_COLLECTION_NAME,
     save_citations: bool = False,
     output_json_path: Path | None = None,
 ):
@@ -129,8 +129,8 @@ from rag_playground.retrieval.vector_db import AsyncQdrantVectorDB
 
 
 async def initilize_vector_db(
-    save_citations: bool = False, output_json_path: Path | None = None
-):
+    document_paths: list[Path | str] | None = None, save_citations: bool = False, output_json_path: Path | None = None
+) -> None:
     client = LLMFactory.create()
     document_io = DocumentIO()
     extractor = DocumentExtractor()
@@ -139,18 +139,46 @@ async def initilize_vector_db(
     vector_db = AsyncQdrantVectorDB(embedder=embedder)
     retriever = RetrievalService(vector_db=vector_db, client=client)
 
-    document_paths = [
-        Path("data/evaluation/AS19_Sayi-RAG-Sistemlerine-Giris.pdf"),
-        Path("data/evaluation/TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka.pdf"),
-    ]
+    if document_paths is None or len(document_paths) == 0:
+        fixed_document_paths = [
+            Path("data/evaluation/AS19_Sayi-RAG-Sistemlerine-Giris.pdf"),
+            Path("data/evaluation/TUBA-Akilli_Saglik_Sistemi_ve_Yapay_Zeka.pdf"),
+        ]
+    else:
+        fixed_document_paths = [Path(path) for path in document_paths]
 
     await init_vector_db(
         document_io=document_io,
         extractor=extractor,
         chunker=chunker,
         retriever=retriever,
-        document_paths=document_paths,
-        collection_name=settings.QDRANT_KNOWLEDGE_COLLECTION_NAME,
+        document_paths=fixed_document_paths,
+        collection_name=settings.VECTORDB_KNOWLEDGE_COLLECTION_NAME,
         save_citations=save_citations,
         output_json_path=output_json_path,
     )
+
+
+async def initilize_evaluation_vector_db(
+    collection_name: str = settings.VECTORDB_EVALUATION_COLLECTION_NAME,
+    snapshot_file_path: str = settings.EVAL_SNAPSHOT_PATH,
+    chunk_size: int = 5
+) -> None:
+    client = LLMFactory.create()
+    embedder = LLMEmbeddingService(client=client)
+    vector_db = AsyncQdrantVectorDB(embedder=embedder)
+    result = await vector_db.is_collection_exists(
+        collection_name=collection_name
+    )
+    if result:
+        logger.info(f"Evaluation collection '{collection_name}' already exists. Deleting it now...")
+        await vector_db.delete_collection(collection_name=collection_name)
+    result = await vector_db.load_snapshot_from_file(
+        collection_name=collection_name,
+        snapshot_file_path=settings.EVAL_SNAPSHOT_PATH,
+        chunk_size=chunk_size
+    )
+    if not result:
+        raise RuntimeError(f"Failed to load snapshot from {snapshot_file_path} into collection '{collection_name}'")
+    else:
+        logger.info(f"Snapshot loaded successfully from {snapshot_file_path} into collection '{collection_name}'")

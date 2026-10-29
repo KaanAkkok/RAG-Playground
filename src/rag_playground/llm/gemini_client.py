@@ -108,13 +108,22 @@ class GeminiClient(LLMClient):
         config_options: dict[str, Any] = {
             "output_dimensionality": request.dimensions,
             "task_type": request.task_type,
+            "http_options": types.HttpOptions(
+                timeout=int(request.timeout * 1000) if request.timeout else None
+            ),
         }
         config_options = {k: v for k, v in config_options.items() if v is not None}
         config_options.update(request.provider_options)
-
+        raw_inputs = request.input
+        contents = [
+            types.Content(
+                parts=[types.Part.from_text(text=text)]
+            )
+            for text in raw_inputs
+        ]
         return {
             "model": request.model,
-            "contents": request.input,
+            "contents": contents,
             "config": types.EmbedContentConfig(**config_options),
         }
 
@@ -157,13 +166,21 @@ class GeminiClient(LLMClient):
                 raise EmbeddingClientError(
                     "No embeddings received from Gemini-compatible provider"
                 )
-            embeddings = []
+            embeddings: list[list[float]] = []
             for item in response.embeddings:
-                if item.values is None:
+                if item.values is None or len(item.values) == 0:
                     raise EmbeddingClientError(
-                        "Gemini returned an embedding without values"
+                        "Gemini returned an embedding without valid values"
                     )
                 embeddings.append(item.values)
+            expected_count = (
+                len(request.input) if isinstance(request.input, list) else 1
+            )
+            if len(embeddings) != expected_count:
+                raise EmbeddingClientError(
+                    "Embedding count mismatch: "
+                    f"expected={expected_count}, got={len(embeddings)}"
+                )
             return embeddings
         except EmbeddingClientError:
             raise

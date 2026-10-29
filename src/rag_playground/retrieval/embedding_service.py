@@ -23,9 +23,11 @@ class LLMEmbeddingService(EmbeddingService):
         client: LLMClient,
         deployment_name: str = settings.llm_models.embedding,
         embed_batch_size: int = settings.EMBED_BATCH_SIZE,
+        timeout: int = settings.EMBEDDING_TIMEOUT,
     ):
         self.deployment_name = deployment_name
         self.embed_batch_size = embed_batch_size
+        self.timeout = timeout
         self.validate_config()
         self.client = client
 
@@ -37,6 +39,8 @@ class LLMEmbeddingService(EmbeddingService):
             )
         if self.embed_batch_size is None or self.embed_batch_size <= 0:
             raise ValueError("Embed batch size must be a positive integer.")
+        if self.timeout is None or self.timeout <= 0:
+            raise ValueError("Embedding timeout must be a positive integer.")
 
     async def _call_embedding_api(self, inputs: list[str]) -> list[list[float]]:
         if not inputs or len(inputs) == 0:
@@ -44,7 +48,9 @@ class LLMEmbeddingService(EmbeddingService):
 
         try:
             return await self.client.generate_embeddings(
-                EmbeddingRequest(model=self.deployment_name, input=inputs)
+                EmbeddingRequest(
+                    model=self.deployment_name, input=inputs, timeout=self.timeout
+                )
             )
         except Exception as e:
             logger.exception("Error generating embeddings")
@@ -63,4 +69,8 @@ class LLMEmbeddingService(EmbeddingService):
             inputs = texts[i : i + self.embed_batch_size]
             batch_vectors = await self._call_embedding_api(inputs)
             vectors.extend(batch_vectors)
+        if len(vectors) != len(texts):
+            raise EmbeddingError(
+                f"Expected {len(texts)} embeddings, but got {len(vectors)}."
+            )
         return vectors

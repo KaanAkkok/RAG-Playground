@@ -1,6 +1,7 @@
 import asyncio
 import math
 from pathlib import Path
+from typing import Literal
 
 from rag_playground.core.exceptions import RetrievalServiceError
 from rag_playground.core.logger import get_logger
@@ -26,26 +27,35 @@ class RetrievalEvaluator(EvaluationService):
     def __init__(
         self,
         retriever: RetrievalService,
-        collection_name: str,
         chunk_id_tag: str,
         document_id_tag: str,
+        collection_name: str = settings.VECTORDB_EVALUATION_COLLECTION_NAME,
+        eval_level: Literal[1, 2] = settings.RETRIEVAL_EVALUATION_LEVEL,
         ground_truth_path: Path | str = settings.EVALUATION_FILE,
     ):
         self.retriever = retriever
         self.collection_name = collection_name
         super().__init__(ground_truth_path)
+        self.eval_level = eval_level
         self.chunk_id_tag = chunk_id_tag
         self.document_id_tag = document_id_tag
+        self._validate_config()
 
-    def _validate_query(self, query: str) -> str:
-        if not isinstance(query, str):
-            raise TypeError(f"Query must be a string, got {type(query)}")
-        query = query.strip().lower()
-        if not query:
-            raise ValueError("Query cannot be empty or whitespace")
-        if query not in self.ground_truth:
-            raise ValueError(f"Query '{query}' not found in ground truth")
-        return query
+    def _validate_config(self):
+        if not self.retrieve or not isinstance(self.retriever, RetrievalService):
+            raise ValueError(
+                "Retriever service must be provided and be an instance of RetrievalService."
+            )
+        if not self.collection_name or not isinstance(self.collection_name, str):
+            raise ValueError("Collection name must be a non-empty string.")
+        if not isinstance(self.eval_level, int) or self.eval_level not in (1, 2):
+            raise ValueError(
+                "Evaluation level must be either 1 (passage-level) or 2 (document-level)."
+            )
+        if not self.chunk_id_tag or not isinstance(self.chunk_id_tag, str):
+            raise ValueError("Chunk ID tag must be a non-empty string.")
+        if not self.document_id_tag or not isinstance(self.document_id_tag, str):
+            raise ValueError("Document ID tag must be a non-empty string.")
 
     def _get_chunk_ids_and_docs(
         self, chunks: list[dict]
@@ -102,7 +112,11 @@ class RetrievalEvaluator(EvaluationService):
     ) -> float:
         retrieved_chunk_ids, retrieved_doc_ids = retrieved_tuple
         expected_chunk_ids, expected_doc_ids = expected_tuple
-        if not expected_chunk_ids:
+        if self.eval_level == 2 or not expected_chunk_ids:
+            if not expected_chunk_ids:
+                logger.warning(
+                    "No chunks found. Using document IDs for precision calculation."
+                )
             expected_chunk_ids = expected_doc_ids
             retrieved_chunk_ids = retrieved_doc_ids
         if not retrieved_chunk_ids:
@@ -120,10 +134,11 @@ class RetrievalEvaluator(EvaluationService):
     ) -> float:
         retrieved_chunk_ids, retrieved_doc_ids = retrieved_tuple
         expected_chunk_ids, expected_doc_ids = expected_tuple
-        if not expected_chunk_ids:
-            logger.info(
-                "No expected chunks found. Using document IDs for recall calculation."
-            )
+        if self.eval_level == 2 or not expected_chunk_ids:
+            if not expected_chunk_ids:
+                logger.warning(
+                    "No chunks found. Using document IDs for recall calculation."
+                )
             expected_chunk_ids = expected_doc_ids
             retrieved_chunk_ids = retrieved_doc_ids
         recall = (
@@ -141,8 +156,11 @@ class RetrievalEvaluator(EvaluationService):
     ) -> float:
         retrieved_chunk_ids, retrieved_doc_ids = retrieved_tuple
         expected_chunk_ids, expected_doc_ids = expected_tuple
-        if not expected_chunk_ids:
-            logger.info("No chunks found. Using document IDs for hit rate calculation.")
+        if self.eval_level == 2 or not expected_chunk_ids:
+            if not expected_chunk_ids:
+                logger.warning(
+                    "No chunks found. Using document IDs for hit rate calculation."
+                )
             expected_chunk_ids = expected_doc_ids
             retrieved_chunk_ids = retrieved_doc_ids
         hit_rate = int(bool(set(retrieved_chunk_ids) & set(expected_chunk_ids)))
@@ -155,10 +173,15 @@ class RetrievalEvaluator(EvaluationService):
     ) -> float:
         retrieved_chunk_ids, _ = retrieved_tuple
         expected_chunk_ids, _ = expected_tuple
-        if not expected_chunk_ids:
-            raise ValueError(
-                "No expected chunks found for RR calculation. Cannot compute RR without expected chunks."
+        if self.eval_level == 2 or not expected_chunk_ids:
+            if not expected_chunk_ids:
+                logger.warning(
+                    "No chunks found. Using document IDs for RR calculation."
+                )
+            logger.warning(
+                "Document-level evaluation is not compatible with RR calculation. Returning 0.0."
             )
+            return 0.0
         rr_score = 0.0
         for rank, chunk_id in enumerate(retrieved_chunk_ids, start=1):
             if chunk_id in expected_chunk_ids:
@@ -178,7 +201,7 @@ class RetrievalEvaluator(EvaluationService):
             return 0.0
         mrr_score = 0.0
         for query, retrieved_chunks in query_results:
-            query = self._validate_query(query)
+            query = super().validate_query(query, self.ground_truth)
             retrieved_tuple = self._get_chunk_ids_and_docs(retrieved_chunks)
             expected_tuple = self._get_expected_chunk_ids_and_docs(query)
             retrieved_tuple, expected_tuple = self._return_docs_and_chunks(
@@ -195,10 +218,15 @@ class RetrievalEvaluator(EvaluationService):
     ) -> float:
         retrieved_chunk_ids, _ = retrieved_tuple
         expected_chunk_ids, _ = expected_tuple
-        if not expected_chunk_ids:
-            raise ValueError(
-                "No expected chunks found for NDCG calculation. Cannot compute NDCG without expected chunks."
+        if self.eval_level == 2 or not expected_chunk_ids:
+            if not expected_chunk_ids:
+                logger.warning(
+                    "No chunks found. Using document IDs for NDCG calculation."
+                )
+            logger.warning(
+                "Document-level evaluation is not compatible with NDCG calculation. Returning 0.0."
             )
+            return 0.0
         dcg = 0.0
         idcg = 0.0
         for rank, chunk_id in enumerate(retrieved_chunk_ids, start=1):
@@ -237,7 +265,6 @@ class RetrievalEvaluator(EvaluationService):
 
         async def retrieve_query(query: str) -> tuple[str, list[dict]] | None:
             try:
-                query = self._validate_query(query)
                 async with semaphore:
                     await asyncio.sleep(0.1)
                     retrieved_chunks = await self.retriever.retrieve(
@@ -248,8 +275,17 @@ class RetrievalEvaluator(EvaluationService):
                 logger.error(f"Error retrieving results for query '{query}': {e}")
                 return None
 
-        results = await asyncio.gather(*(retrieve_query(query) for query in queries))
-        return [result for result in results if result is not None]
+        tasks = []
+        for query in queries:
+            query = super().validate_query(query, self.ground_truth)
+            task = asyncio.create_task(retrieve_query(query))
+            tasks.append(task)
+        results = []
+        for task in asyncio.as_completed(tasks):
+            result = await task
+            if result is not None:
+                results.append(result)
+        return results
 
     async def evaluate(
         self,
@@ -289,7 +325,7 @@ class RetrievalEvaluator(EvaluationService):
                 )
             retrieved_tuple = self._get_chunk_ids_and_docs(retrieved_chunks)
             expected_tuple = self._get_expected_chunk_ids_and_docs(query)
-            query = self._validate_query(query)
+            query = super().validate_query(query, self.ground_truth)
             retrieved_tuple, expected_tuple = self._return_docs_and_chunks(
                 retrieved_tuple, expected_tuple, query, evaluation_top_k
             )
