@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import AliasChoices, BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -21,6 +21,25 @@ def _find_project_root() -> Path:
 _PROMPTS_DIR = Path(__file__).resolve().parents[1] / "prompts"
 PROJECT_ROOT = _find_project_root()
 
+# LLM_PROVIDER değeri -> o provider'ın env değişkenlerindeki prefix
+_PROVIDER_SETTING_PREFIXES = {
+    "azure": "AZURE_OPENAI",
+    "azure_openai": "AZURE_OPENAI",
+    "openai": "OPENAI",
+    "openai_compatible": "OPENAI",
+    "gemini": "GEMINI",
+}
+
+
+class LLMModels(BaseModel):
+    chat: str
+    intent: str
+    reranker: str
+    memory: str
+    guardrails: str
+    generation_eval: str
+    embedding: str
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -31,25 +50,55 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
     LLM_PROVIDER: str = "azure"
+
+    # OpenAI-compatible settings
     OPENAI_API_KEY: str = ""
     OPENAI_BASE_URL: str | None = None
     OPENAI_CHAT_TIMEOUT: int = 60
     OPENAI_CHAT_MAX_RETRIES: int = 3
+    OPENAI_EMBEDDING_DEPLOYMENT: str = ""
+    OPENAI_CHAT_DEPLOYMENT: str = ""
+    OPENAI_RERANKER_DEPLOYMENT: str = ""
+    OPENAI_INTENT_DEPLOYMENT: str = ""
+    OPENAI_MEMORY_DEPLOYMENT: str = ""
+    OPENAI_GENERATION_EVAL_DEPLOYMENT: str = ""
+    OPENAI_GUARDRAILS_DEPLOYMENT: str = ""
 
+    # Azure OpenAI settings
     AZURE_OPENAI_API_KEY: str = ""
     AZURE_OPENAI_ENDPOINT: str = ""
     AZURE_OPENAI_API_VERSION: str = ""
+    AZURE_OPENAI_CHAT_TIMEOUT: int = 60
+    AZURE_OPENAI_CHAT_MAX_RETRIES: int = 3
     AZURE_OPENAI_EMBEDDING_DEPLOYMENT: str = ""
     AZURE_OPENAI_CHAT_DEPLOYMENT: str = ""
     AZURE_OPENAI_RERANKER_DEPLOYMENT: str = ""
-    AZURE_OPENAI_CHAT_TIMEOUT: int = 60
     AZURE_OPENAI_INTENT_DEPLOYMENT: str = ""
-    AZURE_OPENAI_INTENT_TIMEOUT: int = 10
-    AZURE_OPENAI_CHAT_MAX_RETRIES: int = 3
-    AZURE_OPENAI_RERANK_TIMEOUT: int = 30
     AZURE_OPENAI_MEMORY_DEPLOYMENT: str = ""
     AZURE_OPENAI_GENERATION_EVAL_DEPLOYMENT: str = ""
     AZURE_OPENAI_GUARDRAILS_DEPLOYMENT: str = ""
+
+    # Gemini-compatible settings
+    GEMINI_API_KEY: str = ""
+    GEMINI_CHAT_TIMEOUT: int = 60
+    GEMINI_CHAT_MAX_RETRIES: int = 3
+    GEMINI_EMBEDDING_DEPLOYMENT: str = ""
+    GEMINI_CHAT_DEPLOYMENT: str = ""
+    GEMINI_RERANKER_DEPLOYMENT: str = ""
+    GEMINI_INTENT_DEPLOYMENT: str = ""
+    GEMINI_MEMORY_DEPLOYMENT: str = ""
+    GEMINI_GENERATION_EVAL_DEPLOYMENT: str = ""
+    GEMINI_GUARDRAILS_DEPLOYMENT: str = ""
+
+    # Provider'dan bağımsız görev timeout'ları (saniye); eski AZURE_* isimleri de okunur
+    INTENT_TIMEOUT: int = Field(
+        default=10,
+        validation_alias=AliasChoices("INTENT_TIMEOUT", "AZURE_OPENAI_INTENT_TIMEOUT"),
+    )
+    RERANK_TIMEOUT: int = Field(
+        default=30,
+        validation_alias=AliasChoices("RERANK_TIMEOUT", "AZURE_OPENAI_RERANK_TIMEOUT"),
+    )
 
     ASSISTANT_CHAT_TEMPERATURE: float = 0.0
     ASSISTANT_INTENT_TEMPERATURE: float = 0.0
@@ -104,6 +153,24 @@ class Settings(BaseSettings):
     QDRANT_API_KEY: str | None = None
     QDRANT_KNOWLEDGE_COLLECTION_NAME: str = "Documents"
     QDRANT_MEMORY_COLLECTION_NAME: str = "Memories"
+
+    @property
+    def llm_models(self) -> LLMModels:
+        """Aktif LLM_PROVIDER'ın görev bazlı model/deployment isimleri."""
+        provider = self.LLM_PROVIDER.strip().lower()
+        try:
+            prefix = _PROVIDER_SETTING_PREFIXES[provider]
+        except KeyError as exc:
+            supported = ", ".join(sorted(_PROVIDER_SETTING_PREFIXES))
+            raise ValueError(
+                f"Unsupported LLM provider '{provider}'. Supported providers: {supported}"
+            ) from exc
+        return LLMModels(
+            **{
+                task: getattr(self, f"{prefix}_{task.upper()}_DEPLOYMENT")
+                for task in LLMModels.model_fields
+            }
+        )
 
 
 settings = Settings()

@@ -11,7 +11,6 @@ from rag_playground.ingestion.extractor import DocumentExtractor
 from rag_playground.models.file_type_model import FileType
 from rag_playground.retrieval.retrieval_service import RetrievalService
 
-
 logger = get_logger(__name__)
 
 
@@ -119,19 +118,23 @@ async def init_vector_db(
     logger.info(f"total indexed: {indexed_count}")
     logger.info("Indexleme işlemi tamamlandı.")
 
+
 # =============================================================================================
 
 
 from rag_playground.core.settings import settings
 from rag_playground.llm.llm_factory import LLMFactory
-from rag_playground.retrieval.embedding_service import AzureEmbeddingService
+from rag_playground.retrieval.embedding_service import LLMEmbeddingService
 from rag_playground.retrieval.vector_db import AsyncQdrantVectorDB
 
-async def initilize_vector_db(save_citations: bool = False, output_json_path: Path | None = None):
+
+async def initilize_vector_db(
+    save_citations: bool = False, output_json_path: Path | None = None
+):
     client = LLMFactory.create()
     document_io = DocumentIO()
     extractor = DocumentExtractor()
-    embedder = AzureEmbeddingService(client=client)
+    embedder = LLMEmbeddingService(client=client)
     chunker = DocumentChunker(embedder=embedder)
     vector_db = AsyncQdrantVectorDB(embedder=embedder)
     retriever = RetrievalService(vector_db=vector_db, client=client)
@@ -151,4 +154,3 @@ async def initilize_vector_db(save_citations: bool = False, output_json_path: Pa
         save_citations=save_citations,
         output_json_path=output_json_path,
     )
-

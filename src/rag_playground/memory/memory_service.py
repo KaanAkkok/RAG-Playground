@@ -12,6 +12,11 @@ from rag_playground.llm.llm_factory import LLMClient
 from rag_playground.models.vector_model import VectorRecord
 from rag_playground.prompts.prompts import MEMORY_SYSTEM_PROMPT
 from rag_playground.retrieval.vector_db import VectorDB
+from rag_playground.schemas.llm_client_schema import (
+    ChatRequest,
+    LLMMessage,
+    ResponseFormat,
+)
 from rag_playground.schemas.memory_schema import (
     LLM_MEMORY_RESPONSE_FORMAT,
     MemoryExtraction,
@@ -72,7 +77,7 @@ class MemoryService(MemoryIService):
         long_term_min_score: float = settings.LONG_TERM_MEMORY_MIN_SCORE,
         collection_name: str = settings.QDRANT_MEMORY_COLLECTION_NAME,
         temperature: float = settings.ASSISTANT_CHAT_TEMPERATURE,
-        memory_deployment: str = settings.AZURE_OPENAI_MEMORY_DEPLOYMENT,
+        memory_deployment: str = settings.llm_models.memory,
         system_prompt: str = MEMORY_SYSTEM_PROMPT,
         memory_response_format: dict = LLM_MEMORY_RESPONSE_FORMAT,
     ):
@@ -88,7 +93,7 @@ class MemoryService(MemoryIService):
         self.temperature = temperature
         self.memory_deployment = memory_deployment
         self.system_prompt = system_prompt
-        self.memory_response_format = memory_response_format
+        self.memory_response_format = ResponseFormat(**memory_response_format)
         self.short_term_memory: list[dict[str, str]] = []
         self._pending_messages: list[dict[str, str]] = []
         self._background_tasks: set[asyncio.Task] = set()
@@ -134,23 +139,21 @@ class MemoryService(MemoryIService):
         if not messages:
             return []
         transcript = "\n".join(f"{m['role']}: {m['content']}" for m in messages)
-        request = {
-            "model": self.memory_deployment,
-            "messages": [
-                {"role": "system", "content": self.system_prompt},
-                {"role": "user", "content": f"Konuşma:\n{transcript}"},
+        request = ChatRequest(
+            model=self.memory_deployment,
+            messages=[
+                LLMMessage(role="system", content=self.system_prompt),
+                LLMMessage(role="user", content=f"Konuşma:\n{transcript}"),
             ],
-            "temperature": self.temperature,
-            "response_format": self.memory_response_format,
-        }
+            temperature=self.temperature,
+            response_format=self.memory_response_format,
+        )
         try:
-            response = await self.memory_extractor.generate_response(**request)
+            response = await self.memory_extractor.generate_response(request)
         except Exception as e:
             logger.exception("Error during memory extraction")
             raise MemoryServiceError(f"Error during memory extraction: {e}") from e
-        if not response or not response.choices:
-            return []
-        content = response.choices[0].message.content
+        content = response.text
         if not content:
             return []
         try:

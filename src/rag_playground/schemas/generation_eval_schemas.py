@@ -138,32 +138,3 @@ LLM_ANSWER_QUALITY_FORMAT = {
         "schema": _answer_quality_schema,
     },
 }
-
-
-# =========================== GENERATION EVALUATION SCHEMAS ===========================
-
-
-class GenerationEvalRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    model: str = Field(..., description="The model used for evaluation.")
-    messages: list[dict] = Field(..., description="The messages used for evaluation.")
-    temperature: float = Field(..., description="The temperature used for evaluation.")
-    response_format: dict = Field(
-        ..., description="The response format used for evaluation."
-    )
-
-    @field_validator(
-        "model", "messages", "temperature", "response_format", mode="before"
-    )
-    def validate_fields(cls, value):
-        if value is None:
-            raise ValueError("Field cannot be None")
-        if isinstance(value, float) and (value < 0 or value > 1):
-            raise ValueError("Temperature must be between 0 and 1")
-        if isinstance(value, str):
-            return value.strip()
-        elif isinstance(value, list):
-            return [v for v in value if v is not None]
-        elif isinstance(value, dict):
-            return {k: v for k, v in value.items() if v is not None}
-        return value

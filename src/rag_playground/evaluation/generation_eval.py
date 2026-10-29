@@ -36,7 +36,11 @@ from rag_playground.schemas.generation_eval_schemas import (
     AnswerQualityScores,
     AnswerRelevancyEvalResponse,
     FaithfulnessEvalResponse,
-    GenerationEvalRequest,
+)
+from rag_playground.schemas.llm_client_schema import (
+    ChatRequest,
+    LLMMessage,
+    ResponseFormat,
 )
 
 logger = get_logger(__name__)
@@ -120,7 +124,7 @@ class GenerationEvaluator(EvaluationService):
         assistant: AssistantService,
         embedder: EmbeddingService,
         temperature: float = settings.EVALUATION_CHAT_TEMPERATURE,
-        eval_deployment: str = settings.AZURE_OPENAI_GENERATION_EVAL_DEPLOYMENT,
+        eval_deployment: str = settings.llm_models.generation_eval,
         ground_truth_path: Path | str = settings.EVALUATION_FILE,
         noise_chunks: list[VectorRecord] = NOISE_CHUNKS,
         faithfulness_prompt: str = FAITHFULNESS_PROMPT,
@@ -140,9 +144,15 @@ class GenerationEvaluator(EvaluationService):
         self.faithfulness_prompt = faithfulness_prompt
         self.answer_relevancy_prompt = answer_relevancy_prompt
         self.answer_quality_prompt = answer_quality_prompt
-        self.faithfulness_response_format = faithfulness_response_format
-        self.answer_relevancy_response_format = answer_relevancy_response_format
-        self.answer_quality_response_format = answer_quality_response_format
+        self.faithfulness_response_format = ResponseFormat(
+            **faithfulness_response_format
+        )
+        self.answer_relevancy_response_format = ResponseFormat(
+            **answer_relevancy_response_format
+        )
+        self.answer_quality_response_format = ResponseFormat(
+            **answer_quality_response_format
+        )
         self._validate_params()
 
     def _validate_params(self):
@@ -159,22 +169,24 @@ class GenerationEvaluator(EvaluationService):
                 "Embedder service must be provided and be an instance of EmbeddingService."
             )
 
-    async def _llm_call(self, messages: list[dict], response_format: dict) -> dict:
+    async def _llm_call(
+        self, messages: list[LLMMessage], response_format: ResponseFormat
+    ) -> dict:
         if messages is None or not isinstance(messages, list):
-            raise ValueError("Messages must be a non-empty list of dictionaries.")
-        if response_format is None or not isinstance(response_format, dict):
-            raise ValueError("Response format must be a non-empty dictionary.")
-        request = GenerationEvalRequest(
+            raise ValueError("Messages must be a non-empty list of LLMMessage objects.")
+        if response_format is None or not isinstance(response_format, ResponseFormat):
+            raise ValueError(
+                "Response format must be a non-empty ResponseFormat object."
+            )
+        request = ChatRequest(
             model=self.eval_deployment,
             messages=messages,
             temperature=self.temperature,
             response_format=response_format,
         )
         try:
-            response = await self.evaluator.generate_response(**request.model_dump())
-            if not response or not response.choices:
-                raise ValueError("LLM response did not contain any choices.")
-            content = response.choices[0].message.content
+            response = await self.evaluator.generate_response(request)
+            content = response.text
             if not content or not isinstance(content, str):
                 raise ValueError("LLM response content is empty or not a string.")
             parsed_response = json.loads(content)
@@ -190,7 +202,7 @@ class GenerationEvaluator(EvaluationService):
         answer: str,
         retrieved_chunks: list[str],
         faithfulness_prompt: str,
-        response_format: dict,
+        response_format: ResponseFormat,
     ) -> float:
         if not answer or not isinstance(answer, str):
             raise ValueError("Answer must be a non-empty string.")
@@ -198,15 +210,17 @@ class GenerationEvaluator(EvaluationService):
             raise ValueError("Retrieved chunks must be a non-empty list of strings.")
         if not faithfulness_prompt or not isinstance(faithfulness_prompt, str):
             raise ValueError("Faithfulness prompt must be a non-empty string.")
-        if not response_format or not isinstance(response_format, dict):
-            raise ValueError("Response format must be a non-empty dictionary.")
+        if not response_format or not isinstance(response_format, ResponseFormat):
+            raise ValueError(
+                "Response format must be a non-empty ResponseFormat object."
+            )
         score = 0.0
         messages = [
-            {"role": "system", "content": faithfulness_prompt},
-            {
-                "role": "user",
-                "content": f"Asistanın cevabı: {answer}\nAsistanın alıntıladığı metinler: {retrieved_chunks}",
-            },
+            LLMMessage(role="system", content=faithfulness_prompt),
+            LLMMessage(
+                role="user",
+                content=f"Asistanın cevabı: {answer}\nAsistanın alıntıladığı metinler: {retrieved_chunks}",
+            ),
         ]
         response = await self._llm_call(messages, response_format)
         if (
@@ -235,7 +249,7 @@ class GenerationEvaluator(EvaluationService):
         query: str,
         answer: str,
         answer_relevancy_prompt: str,
-        response_format: dict,
+        response_format: ResponseFormat,
     ) -> float:
         if not query or not isinstance(query, str):
             raise ValueError("Query must be a non-empty string.")
@@ -243,15 +257,17 @@ class GenerationEvaluator(EvaluationService):
             raise ValueError("Answer must be a non-empty string.")
         if not answer_relevancy_prompt or not isinstance(answer_relevancy_prompt, str):
             raise ValueError("Answer relevancy prompt must be a non-empty string.")
-        if not response_format or not isinstance(response_format, dict):
-            raise ValueError("Response format must be a non-empty dictionary.")
+        if not response_format or not isinstance(response_format, ResponseFormat):
+            raise ValueError(
+                "Response format must be a non-empty ResponseFormat object."
+            )
         score = 0.0
         messages = [
-            {"role": "system", "content": answer_relevancy_prompt},
-            {
-                "role": "user",
-                "content": f"Kullanıcı sorusu: {query}\nDeğerlendirilecek asistanın cevap: {answer}",
-            },
+            LLMMessage(role="system", content=answer_relevancy_prompt),
+            LLMMessage(
+                role="user",
+                content=f"Kullanıcı sorusu: {query}\nDeğerlendirilecek asistanın cevap: {answer}",
+            ),
         ]
         response = await self._llm_call(messages, response_format)
         if (
@@ -293,7 +309,7 @@ class GenerationEvaluator(EvaluationService):
         answer: str,
         expected_answer: str,
         answer_correctness_prompt: str,
-        response_format: dict,
+        response_format: ResponseFormat,
         factual_weight: float = 0.75,
         semantic_weight: float = 0.25,
     ) -> AnswerQualityScores:
@@ -326,14 +342,11 @@ class GenerationEvaluator(EvaluationService):
         factual_weight /= total_weight
         semantic_weight /= total_weight
         messages = [
-            {
-                "role": "system",
-                "content": answer_correctness_prompt,
-            },
-            {
-                "role": "user",
-                "content": f"Kullanıcı sorusu: {query}\nAsistanın cevabı: {answer}\nBeklenen cevap: {expected_answer}",
-            },
+            LLMMessage(role="system", content=answer_correctness_prompt),
+            LLMMessage(
+                role="user",
+                content=f"Kullanıcı sorusu: {query}\nAsistanın cevabı: {answer}\nBeklenen cevap: {expected_answer}",
+            ),
         ]
         response = await self._llm_call(messages, response_format)
         if not isinstance(response, dict) or not response:

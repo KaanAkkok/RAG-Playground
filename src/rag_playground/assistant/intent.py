@@ -4,6 +4,7 @@ from rag_playground.core.settings import settings
 from rag_playground.llm.llm_factory import LLMClient
 from rag_playground.prompts.prompts import INTENT_SYSTEM_PROMPT
 from rag_playground.schemas.intent_schema import LLM_INTENT_FORMAT, Intent
+from rag_playground.schemas.llm_client_schema import ChatRequest
 
 logger = get_logger(__name__)
 
@@ -13,10 +14,10 @@ class IntentClassifier:
         self,
         client: LLMClient,
         system_prompt: str = INTENT_SYSTEM_PROMPT,
-        classifier_model: str = settings.AZURE_OPENAI_INTENT_DEPLOYMENT,
+        classifier_model: str = settings.llm_models.intent,
         temperature: float = settings.ASSISTANT_INTENT_TEMPERATURE,
         response_format: dict = LLM_INTENT_FORMAT,
-        timeout: int = settings.AZURE_OPENAI_INTENT_TIMEOUT,
+        timeout: int = settings.INTENT_TIMEOUT,
     ):
         self.system_prompt = system_prompt
         self.classifier_model = classifier_model
@@ -39,27 +40,21 @@ class IntentClassifier:
         if history:
             messages.extend(history)
         messages.append({"role": "user", "content": cleaned_query})
-        request = {
-            "model": self.classifier_model,
-            "messages": messages,
-            "temperature": self.temperature,
-            "response_format": self.response_format,
-            "timeout": self.timeout,
-        }
+        request = ChatRequest(
+            model=self.classifier_model,
+            messages=messages,
+            temperature=self.temperature,
+            response_format=self.response_format,
+            timeout=self.timeout,
+        )
         try:
-            response = await self.classifier.generate_response(**request)
+            response = await self.classifier.generate_response(request)
         except IntentClassificationError as e:
             logger.error(f"Error during intent classification: {e}")
             raise IntentClassificationError(
                 f"Error during intent classification: {e}"
             ) from e
-        if not response or not response.choices or len(response.choices) == 0:
-            return Intent(
-                intent="needs_clarification",
-                confidence=0.0,
-                resolved_query=cleaned_query,
-            )
-        content = response.choices[0].message.content
+        content = response.text
         if not content:
             return Intent(
                 intent="needs_clarification",

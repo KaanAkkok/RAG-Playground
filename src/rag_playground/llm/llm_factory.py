@@ -2,6 +2,12 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Any, ClassVar
 
+from rag_playground.schemas.llm_client_schema import (
+    ChatRequest,
+    EmbeddingRequest,
+    LLMResponse,
+)
+
 
 class LLMClient(ABC):
     def __init__(self) -> None:
@@ -13,11 +19,19 @@ class LLMClient(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def generate_response(self, **request_data: Any) -> Any:
+    def _build_chat_params(self, request: ChatRequest) -> dict[str, Any]:
         raise NotImplementedError
 
     @abstractmethod
-    async def generate_embeddings(self, **request_data: Any) -> list[list[float]]:
+    def _build_embedding_params(self, request: EmbeddingRequest) -> dict[str, Any]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def generate_response(self, request: ChatRequest) -> LLMResponse:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def generate_embeddings(self, request: EmbeddingRequest) -> list[list[float]]:
         raise NotImplementedError
 
 
@@ -54,10 +68,12 @@ class LLMFactory:
             return
 
         from rag_playground.llm.azure_client import AzureOpenAIClient
+        from rag_playground.llm.gemini_client import GeminiClient
         from rag_playground.llm.openai_client import OpenAIClient
 
         cls.register("azure", AzureOpenAIClient)
         cls.register("azure_openai", AzureOpenAIClient)
         cls.register("openai", OpenAIClient)
         cls.register("openai_compatible", OpenAIClient)
+        cls.register("gemini", GeminiClient)
         cls._defaults_loaded = True

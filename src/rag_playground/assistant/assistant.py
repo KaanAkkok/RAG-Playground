@@ -17,6 +17,7 @@ from rag_playground.prompts.prompts import ASSISTANT_SYSTEM_PROMPT
 from rag_playground.retrieval.retrieval_service import RetrievalService
 from rag_playground.schemas.assistant_schema import AssistantResponse
 from rag_playground.schemas.intent_schema import Intent
+from rag_playground.schemas.llm_client_schema import ChatRequest, LLMMessage
 
 logger = get_logger(__name__)
 
@@ -43,7 +44,7 @@ class AssistantService:
         memory_service: MemoryIService | None,
         guardrails_enabled: bool = True,
         memory_enabled: bool = True,
-        model: str = settings.AZURE_OPENAI_CHAT_DEPLOYMENT,
+        model: str = settings.llm_models.chat,
         temperature: float = settings.ASSISTANT_CHAT_TEMPERATURE,
         system_prompt: str = ASSISTANT_SYSTEM_PROMPT,
     ):
@@ -219,17 +220,18 @@ class AssistantService:
         system_task = f"{task}\n\nKaynaklar:\n{context}" if context else task
         messages.append({"role": "system", "content": system_task})
         messages.append({"role": "user", "content": message})
-        request = {
-            "model": self.model,
-            "messages": messages,
-            "temperature": self.temperature,
-        }
+        messages = [LLMMessage.model_validate(message) for message in messages]
+        request = ChatRequest(
+            model=self.model,
+            messages=messages,
+            temperature=self.temperature,
+        )
         try:
-            response = await self.client.generate_response(**request)
+            response = await self.client.generate_response(request)
         except LLMClientError:
             logger.exception("Error occurred while generating response")
             raise
-        answer = response.choices[0].message.content
+        answer = response.text
         if not answer:
             answer = ERROR_ANSWER
         return answer.strip()

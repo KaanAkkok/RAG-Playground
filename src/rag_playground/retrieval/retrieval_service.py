@@ -11,6 +11,11 @@ from rag_playground.models.search_hit_model import SearchHit
 from rag_playground.models.vector_model import VectorRecord
 from rag_playground.prompts.prompts import RERANK_SYSTEM_PROMPT
 from rag_playground.retrieval.vector_db import VectorDB
+from rag_playground.schemas.llm_client_schema import (
+    ChatRequest,
+    LLMMessage,
+    ResponseFormat,
+)
 from rag_playground.schemas.rerank_schema import (
     LLM_RERANK_RESPONSE_FORMAT,
     RerankResponse,
@@ -25,22 +30,24 @@ class RetrievalService:
         vector_db: VectorDB,
         client: LLMClient,
         reranker_active: bool = True,
-        reranker: str = settings.AZURE_OPENAI_RERANKER_DEPLOYMENT,
+        reranker: str = settings.llm_models.reranker,
         reranker_system_prompt: str = RERANK_SYSTEM_PROMPT,
         temperature: float = settings.ASSISTANT_CHAT_TEMPERATURE,
         rerank_passage_chars: int = settings.RERANK_PASSAGE_CHARS,
         min_rerank_score: int = settings.MIN_RERANK_SCORE,
         response_format: dict = LLM_RERANK_RESPONSE_FORMAT,
+        rerank_timeout: int = settings.RERANK_TIMEOUT,
     ):
         self.retriever = client
         self.vector_db = vector_db
         self.reranker_active = reranker_active
         self.reranker = reranker
+        self.rerank_timeout = rerank_timeout
         self.reranker_system_prompt = reranker_system_prompt
         self.temperature = temperature
         self.rerank_passage_chars = rerank_passage_chars
         self.min_rerank_score = min_rerank_score
-        self.response_format = response_format
+        self.response_format = ResponseFormat(**response_format)
 
     @staticmethod
     def _citation_key(c: Citation) -> str:
@@ -151,18 +158,19 @@ class RetrievalService:
             f"{json.dumps(passages, ensure_ascii=False)}"
         )
         messages = [
-            {"role": "system", "content": self.reranker_system_prompt},
-            {"role": "user", "content": prompt},
+            LLMMessage(role="system", content=self.reranker_system_prompt),
+            LLMMessage(role="user", content=prompt),
         ]
-        request = {
-            "model": self.reranker,
-            "temperature": self.temperature,
-            "response_format": self.response_format,
-            "messages": messages,
-        }
+        request = ChatRequest(
+            model=self.reranker,
+            temperature=self.temperature,
+            response_format=self.response_format,
+            messages=messages,
+            timeout=self.rerank_timeout,
+        )
         try:
-            response = await self.retriever.generate_response(**request)
-            raw = response.choices[0].message.content or "{}"
+            response = await self.retriever.generate_response(request)
+            raw = response.text or "{}"
             parsed = RerankResponse.model_validate_json(raw)
             score_map: dict[int, float] = {}
             for item in parsed.scores:

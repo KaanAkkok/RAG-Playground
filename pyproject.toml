@@ -17,6 +17,7 @@ dependencies = [
     "manimations",
     "rtree>=1.4.1",
     "opencv-python-headless>=5.0.0.93",
+    "google-genai>=2.33.0",
 ]
 
 [project.scripts]
