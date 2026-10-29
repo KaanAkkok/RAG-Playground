@@ -112,7 +112,9 @@ class CalcScene(RAGScene):
         self.play(FadeIn(grp, shift=DOWN * 0.2), run_time=self.rt(1.1))
         self.pause(0.3)
 
-    def math(self, latex: str, fallback: str = "", fs: int = 30, color: ManimColor = WHITE) -> Mobject:
+    def math(
+        self, latex: str, fallback: str = "", fs: int = 30, color: ManimColor = WHITE
+    ) -> Mobject:
         """Formulleri LaTeX (MathTex) ile cizer. `fallback` eski imza uyumu icin tutuldu, kullanilmaz."""
         return MathTex(latex, font_size=fs, color=color)
 
@@ -174,7 +176,9 @@ class CalcScene(RAGScene):
 
     # ---- Retrieval icin ortak R / E kolonlari ----
     def sets_view(self, y: float = 1.35) -> dict[str, Any]:
-        r_head = self.chip("Getirilen (R) - Top 3", BLUE_B, w=3.6, fs=14, fill="#162030")
+        r_head = self.chip(
+            "Getirilen (R) - Top 3", BLUE_B, w=3.6, fs=14, fill="#162030"
+        )
         r_chips = VGroup(
             *[
                 self.chip(f"{i}. {c}", GREEN_B if c in E_LIST else RED_C, w=3.6)
@@ -186,7 +190,11 @@ class CalcScene(RAGScene):
         e_head = self.chip("Ground Truth (E)", GOLD_B, w=3.6, fs=14, fill="#162030")
         e_chips = VGroup(
             *[
-                self.chip(c + ("" if c in R_LIST else "  (eksik)"), GREEN_B if c in R_LIST else ORANGE, w=3.6)
+                self.chip(
+                    c + ("" if c in R_LIST else "  (eksik)"),
+                    GREEN_B if c in R_LIST else ORANGE,
+                    w=3.6,
+                )
                 for c in E_LIST
             ]
         ).arrange(DOWN, buff=0.1)
@@ -195,11 +203,20 @@ class CalcScene(RAGScene):
         return {"r_col": r_col, "r_chips": r_chips, "e_col": e_col, "e_chips": e_chips}
 
     def show_sets(self, v: dict[str, Any]) -> None:
-        self.play(FadeIn(v["r_col"], shift=RIGHT * 0.25), FadeIn(v["e_col"], shift=LEFT * 0.25), run_time=0.9)
+        self.play(
+            FadeIn(v["r_col"], shift=RIGHT * 0.25),
+            FadeIn(v["e_col"], shift=LEFT * 0.25),
+            run_time=0.9,
+        )
 
     def link_match(self, v: dict[str, Any]) -> Line:
         """R'deki chunk_1 ile E'deki chunk_1 arasina kesisim cizgisi cizer."""
-        link = Line(v["r_chips"][1].get_right(), v["e_chips"][0].get_left(), color=GREEN_B, stroke_width=3)
+        link = Line(
+            v["r_chips"][1].get_right(),
+            v["e_chips"][0].get_left(),
+            color=GREEN_B,
+            stroke_width=3,
+        )
         self.play(
             Create(link),
             Indicate(v["r_chips"][1], color=GREEN_B),
@@ -222,14 +239,22 @@ class ContextPrecisionScene(CalcScene):
         self.show_sets(v)
         link = self.link_match(v)
 
-        c_inter = self.mlbl(r"|R\cap E|=1", GREEN_A).move_to([0, v["r_col"].get_bottom()[1] - 0.35, 0])
-        c_r = self.mlbl(r"|R|=3\;\text{(getirilen toplam)}", BLUE_B).next_to(v["r_col"], DOWN, buff=0.65)
+        c_inter = self.mlbl(r"|R\cap E|=1", GREEN_A).move_to(
+            [0, v["r_col"].get_bottom()[1] - 0.35, 0]
+        )
+        c_r = self.mlbl(r"|R|=3\;\text{(getirilen toplam)}", BLUE_B).next_to(
+            v["r_col"], DOWN, buff=0.65
+        )
         self.play(FadeIn(c_inter, shift=UP * 0.1), run_time=0.5)
         self.play(FadeIn(c_r, shift=UP * 0.1), run_time=0.5)
 
         lines = self.reveal_lines(
             [
-                (r"\text{Precision}=\frac{|R\cap E|}{|R|}", "Precision = |R n E| / |R|", WHITE),
+                (
+                    r"\text{Precision}=\frac{|R\cap E|}{|R|}",
+                    "Precision = |R n E| / |R|",
+                    WHITE,
+                ),
                 (r"=\frac{1}{3}", "= 1 / 3", WHITE),
                 (rf"=\mathbf{{{PREC:.4f}}}", f"= {PREC:.4f}", YELLOW_B),
             ],
@@ -253,15 +278,25 @@ class ContextRecallScene(CalcScene):
         self.show_sets(v)
         self.link_match(v)
 
-        missing = self.lbl("chunk_3 getirilemedi -> kayip", ORANGE, fs=14).next_to(v["e_col"], DOWN, buff=0.35)
-        c_e = self.mlbl(r"|E|=2\;\text{(beklenen toplam)}", GOLD_B).next_to(missing, DOWN, buff=0.15)
-        c_inter = self.mlbl(r"|R\cap E|=1", GREEN_A).move_to([-3.4, v["r_col"].get_bottom()[1] - 0.45, 0])
+        missing = self.lbl("chunk_3 getirilemedi -> kayip", ORANGE, fs=14).next_to(
+            v["e_col"], DOWN, buff=0.35
+        )
+        c_e = self.mlbl(r"|E|=2\;\text{(beklenen toplam)}", GOLD_B).next_to(
+            missing, DOWN, buff=0.15
+        )
+        c_inter = self.mlbl(r"|R\cap E|=1", GREEN_A).move_to(
+            [-3.4, v["r_col"].get_bottom()[1] - 0.45, 0]
+        )
         self.play(FadeIn(c_inter), FadeIn(missing, shift=UP * 0.1), run_time=0.6)
         self.play(FadeIn(c_e, shift=UP * 0.1), run_time=0.5)
 
         lines = self.reveal_lines(
             [
-                (r"\text{Recall}=\frac{|R\cap E|}{|E|}", "Recall = |R n E| / |E|", WHITE),
+                (
+                    r"\text{Recall}=\frac{|R\cap E|}{|E|}",
+                    "Recall = |R n E| / |E|",
+                    WHITE,
+                ),
                 (r"=\frac{1}{2}", "= 1 / 2", WHITE),
                 (rf"=\mathbf{{{REC:.4f}}}", f"= {REC:.4f}", YELLOW_B),
             ],
@@ -282,8 +317,22 @@ class F1ScoreScene(CalcScene):
         self.camera.background_color = BLACK
         self.header("F1 Score", "Precision ve Recall'un harmonik ortalamasi")
 
-        p_card = self.mchip(rf"\text{{Precision}}=\frac{{1}}{{3}}={PREC:.4f}", BLUE_B, w=4.4, h=0.9, fs=28, fill="#162030")
-        r_card = self.mchip(rf"\text{{Recall}}=\frac{{1}}{{2}}={REC:.4f}", TEAL_B, w=4.4, h=0.9, fs=28, fill="#162030")
+        p_card = self.mchip(
+            rf"\text{{Precision}}=\frac{{1}}{{3}}={PREC:.4f}",
+            BLUE_B,
+            w=4.4,
+            h=0.9,
+            fs=28,
+            fill="#162030",
+        )
+        r_card = self.mchip(
+            rf"\text{{Recall}}=\frac{{1}}{{2}}={REC:.4f}",
+            TEAL_B,
+            w=4.4,
+            h=0.9,
+            fs=28,
+            fill="#162030",
+        )
         cards = VGroup(p_card, r_card).arrange(RIGHT, buff=0.7).move_to([0, 1.5, 0])
         self.play(FadeIn(cards, shift=DOWN * 0.15), run_time=0.9)
         self.wait(0.3)
@@ -335,12 +384,18 @@ class HitRateScene(CalcScene):
                 break
         self.link_match(v)
 
-        res = self.mlbl(r"|R\cap E|=1>0\;\Rightarrow\;\text{Hit!}", GREEN_A, fs=30).move_to([0, -1.1, 0])
+        res = self.mlbl(
+            r"|R\cap E|=1>0\;\Rightarrow\;\text{Hit!}", GREEN_A, fs=30
+        ).move_to([0, -1.1, 0])
         self.play(FadeIn(res, scale=0.9), run_time=0.5)
 
         lines = self.reveal_lines(
             [
-                (r"\text{HitRate}=\mathbb{I}(|R\cap E|>0)", "HitRate = I(|R n E| > 0)", WHITE),
+                (
+                    r"\text{HitRate}=\mathbb{I}(|R\cap E|>0)",
+                    "HitRate = I(|R n E| > 0)",
+                    WHITE,
+                ),
                 (r"=\mathbb{I}(1>0)", "= I(1 > 0)", WHITE),
                 (r"=\mathbf{1}", "= 1", YELLOW_B),
             ],
@@ -361,16 +416,25 @@ class MRRScene(CalcScene):
         self.camera.background_color = BLACK
         self.header("MRR - Mean Reciprocal Rank", "Ilk dogru parca kacinci sirada?")
 
-        row = VGroup(
-            *[
-                VGroup(
-                    self.chip(c, GREEN_B if c in E_LIST else RED_C, w=2.6, h=0.7, fs=16),
-                    self.lbl(f"rank {i}", GREY_B, fs=14),
-                ).arrange(DOWN, buff=0.12)
-                for i, c in enumerate(R_LIST, 1)
-            ]
-        ).arrange(RIGHT, buff=0.5).move_to([0, 1.3, 0])
-        self.play(LaggedStart(*[FadeIn(c, shift=UP * 0.15) for c in row], lag_ratio=0.2), run_time=1.1)
+        row = (
+            VGroup(
+                *[
+                    VGroup(
+                        self.chip(
+                            c, GREEN_B if c in E_LIST else RED_C, w=2.6, h=0.7, fs=16
+                        ),
+                        self.lbl(f"rank {i}", GREY_B, fs=14),
+                    ).arrange(DOWN, buff=0.12)
+                    for i, c in enumerate(R_LIST, 1)
+                ]
+            )
+            .arrange(RIGHT, buff=0.5)
+            .move_to([0, 1.3, 0])
+        )
+        self.play(
+            LaggedStart(*[FadeIn(c, shift=UP * 0.15) for c in row], lag_ratio=0.2),
+            run_time=1.1,
+        )
 
         # Soldan saga tarama: alakasiz -> gec, ilgili -> dur
         scan = SurroundingRectangle(row[0][0], color=YELLOW_B, buff=0.06)
@@ -378,13 +442,19 @@ class MRRScene(CalcScene):
         for i in range(1, FIRST_RANK):
             self.play(scan.animate.move_to(row[i][0]), run_time=0.5)
         self.play(Indicate(row[FIRST_RANK - 1][0], color=GREEN_B), run_time=0.7)
-        found = self.mlbl(rf"\text{{Ilk dogru parca: }}\text{{rank}}_q={FIRST_RANK}", GREEN_A, fs=30).move_to([0, -0.25, 0])
+        found = self.mlbl(
+            rf"\text{{Ilk dogru parca: }}\text{{rank}}_q={FIRST_RANK}", GREEN_A, fs=30
+        ).move_to([0, -0.25, 0])
         self.play(FadeIn(found, shift=UP * 0.1), run_time=0.5)
 
         lines = self.reveal_lines(
             [
                 (r"\text{RR}_q=\frac{1}{\text{rank}_q}", "RR = 1 / rank", WHITE),
-                (rf"=\frac{{1}}{{{FIRST_RANK}}}=\mathbf{{{RR:.4f}}}", f"= 1 / {FIRST_RANK} = {RR:.4f}", YELLOW_B),
+                (
+                    rf"=\frac{{1}}{{{FIRST_RANK}}}=\mathbf{{{RR:.4f}}}",
+                    f"= 1 / {FIRST_RANK} = {RR:.4f}",
+                    YELLOW_B,
+                ),
                 (
                     r"\text{MRR}=\frac{1}{|Q|}\sum_{q\in Q}\text{RR}_q=\frac{0.5}{1}=0.5",
                     "MRR = (1/|Q|) * sum(RR_q) = 0.5 / 1 = 0.5",
@@ -407,9 +477,16 @@ class NDCGScene(CalcScene):
 
     def construct(self) -> None:
         self.camera.background_color = BLACK
-        self.header("Binary NDCG", "Dogru parcalar ne kadar ustte? (logaritmik indirim)")
+        self.header(
+            "Binary NDCG", "Dogru parcalar ne kadar ustte? (logaritmik indirim)"
+        )
 
-        head = [r"i", r"\text{rel}_i", r"\log_2(i+1)", r"\frac{\text{rel}_i}{\log_2(i+1)}"]
+        head = [
+            r"i",
+            r"\text{rel}_i",
+            r"\log_2(i+1)",
+            r"\frac{\text{rel}_i}{\log_2(i+1)}",
+        ]
         cells = [self.mlbl(h, ORANGE, fs=26) for h in head]
         for i in range(N_R):
             cells += [
@@ -418,15 +495,25 @@ class NDCGScene(CalcScene):
                 self.lbl(f"{math.log2(i + 2):.3f}", WHITE, 15),
                 self.lbl(f"{REL[i] * DISC[i]:.4f}", YELLOW_B if REL[i] else GREY_B, 15),
             ]
-        table = VGroup(*cells).arrange_in_grid(rows=N_R + 1, cols=4, buff=(0.9, 0.2)).move_to([0.5, 1.45, 0])
-        self.play(LaggedStart(*[FadeIn(c) for c in cells], lag_ratio=0.04), run_time=1.6)
+        table = (
+            VGroup(*cells)
+            .arrange_in_grid(rows=N_R + 1, cols=4, buff=(0.9, 0.2))
+            .move_to([0.5, 1.45, 0])
+        )
+        self.play(
+            LaggedStart(*[FadeIn(c) for c in cells], lag_ratio=0.04), run_time=1.6
+        )
         self.play(Indicate(VGroup(*cells[8:12]), color=GREEN_B), run_time=0.7)
 
         d_terms = " + ".join(f"{r * d:.4f}" for r, d in zip(REL, DISC))
         i_terms = " + ".join(f"{r * d:.4f}" for r, d in zip(IDEAL, DISC))
         lines = self.reveal_lines(
             [
-                (rf"\text{{DCG}}={d_terms}=\mathbf{{{DCG:.4f}}}", f"DCG = {d_terms} = {DCG:.4f}", WHITE),
+                (
+                    rf"\text{{DCG}}={d_terms}=\mathbf{{{DCG:.4f}}}",
+                    f"DCG = {d_terms} = {DCG:.4f}",
+                    WHITE,
+                ),
                 (
                     rf"\text{{IDCG}}\;(\text{{ideal: }}[1,1,0])={i_terms}=\mathbf{{{IDCG:.4f}}}",
                     f"IDCG (ideal [1,1,0]) = {i_terms} = {IDCG:.4f}",
@@ -457,9 +544,18 @@ class FaithfulnessScene(CalcScene):
 
     def construct(self) -> None:
         self.camera.background_color = BLACK
-        self.header("Faithfulness (Sadakat)", "Cevaptaki iddialarin kaynakca desteklenme orani")
+        self.header(
+            "Faithfulness (Sadakat)", "Cevaptaki iddialarin kaynakca desteklenme orani"
+        )
 
-        ctx = self.chip("Kaynak: RAG uc asamadan olusur: Retrieval, Augmentation, Generation.", TEAL_B, w=6.0, h=0.95, fs=13, fill="#162030")
+        ctx = self.chip(
+            "Kaynak: RAG uc asamadan olusur: Retrieval, Augmentation, Generation.",
+            TEAL_B,
+            w=6.0,
+            h=0.95,
+            fs=13,
+            fill="#162030",
+        )
         ctx.move_to([3.6, 1.2, 0])
         claims_spec = [
             ("RAG uc asamadan olusur", True),
@@ -473,14 +569,20 @@ class FaithfulnessScene(CalcScene):
             chip = self.chip(txt, GREEN_B if ok else RED_C, w=4.2, h=0.46)
             claim_rows.add(VGroup(chip, mark).arrange(RIGHT, buff=0.2))
         claim_rows.arrange(DOWN, buff=0.12).move_to([-3.2, 1.0, 0])
-        c_head = self.lbl("Cevaptan cikarilan iddialar (claims)", BLUE_B, fs=14).next_to(claim_rows, UP, buff=0.2)
+        c_head = self.lbl(
+            "Cevaptan cikarilan iddialar (claims)", BLUE_B, fs=14
+        ).next_to(claim_rows, UP, buff=0.2)
 
         self.play(FadeIn(c_head), FadeIn(ctx, shift=LEFT * 0.2), run_time=0.8)
         for row, (_, ok) in zip(claim_rows, claims_spec):
             self.play(FadeIn(row[0], shift=RIGHT * 0.15), run_time=0.35)
             self.play(FadeIn(row[1], scale=1.3), run_time=0.25)
 
-        cnt = self.mlbl(rf"|C_{{\text{{supported}}}}|={FAITH_SUP}\qquad|C_{{\text{{total}}}}|={FAITH_TOT}", YELLOW_B, fs=30).move_to([0, -0.9, 0])
+        cnt = self.mlbl(
+            rf"|C_{{\text{{supported}}}}|={FAITH_SUP}\qquad|C_{{\text{{total}}}}|={FAITH_TOT}",
+            YELLOW_B,
+            fs=30,
+        ).move_to([0, -0.9, 0])
         self.play(FadeIn(cnt, shift=UP * 0.1), run_time=0.5)
 
         lines = self.reveal_lines(
@@ -490,7 +592,11 @@ class FaithfulnessScene(CalcScene):
                     "Faithfulness = C_supported / C_total",
                     WHITE,
                 ),
-                (rf"=\frac{{{FAITH_SUP}}}{{{FAITH_TOT}}}=\mathbf{{{FAITH:.4f}}}", f"= {FAITH_SUP} / {FAITH_TOT} = {FAITH:.4f}", YELLOW_B),
+                (
+                    rf"=\frac{{{FAITH_SUP}}}{{{FAITH_TOT}}}=\mathbf{{{FAITH:.4f}}}",
+                    f"= {FAITH_SUP} / {FAITH_TOT} = {FAITH:.4f}",
+                    YELLOW_B,
+                ),
             ],
             y_top=-1.7,
             gap=0.85,
@@ -508,9 +614,19 @@ class AnswerRelevancyScene(CalcScene):
 
     def construct(self) -> None:
         self.camera.background_color = BLACK
-        self.header("Answer Relevancy (Ilgililik)", "Cevaptan uretilen sorular asil soruya ne kadar benziyor?")
+        self.header(
+            "Answer Relevancy (Ilgililik)",
+            "Cevaptan uretilen sorular asil soruya ne kadar benziyor?",
+        )
 
-        q = self.chip("Asil soru q: RAG'in temel asamalari nelerdir?", BLUE_B, w=7.0, h=0.5, fs=14, fill="#162030")
+        q = self.chip(
+            "Asil soru q: RAG'in temel asamalari nelerdir?",
+            BLUE_B,
+            w=7.0,
+            h=0.5,
+            fs=14,
+            fill="#162030",
+        )
         q.move_to([0, 2.05, 0])
         self.play(FadeIn(q, shift=DOWN * 0.15), run_time=0.7)
 
@@ -522,8 +638,13 @@ class AnswerRelevancyScene(CalcScene):
             flag = self.mlbl(rf"\text{{rel}}_{i}={r}", col, fs=24)
             gen_rows.add(VGroup(gq, sim, flag).arrange(RIGHT, buff=0.5))
         gen_rows.arrange(DOWN, buff=0.14).move_to([0, 0.75, 0])
-        self.play(LaggedStart(*[FadeIn(r, shift=UP * 0.12) for r in gen_rows], lag_ratio=0.3), run_time=1.5)
-        note = self.lbl("rel = 0 -> kacamak/alakasiz soru, katkisi 0", ORANGE, fs=13).next_to(gen_rows, DOWN, buff=0.15)
+        self.play(
+            LaggedStart(*[FadeIn(r, shift=UP * 0.12) for r in gen_rows], lag_ratio=0.3),
+            run_time=1.5,
+        )
+        note = self.lbl(
+            "rel = 0 -> kacamak/alakasiz soru, katkisi 0", ORANGE, fs=13
+        ).next_to(gen_rows, DOWN, buff=0.15)
         self.play(FadeIn(note), run_time=0.4)
 
         terms = " + ".join(f"{r}\\cdot{s:.2f}" for s, r in REL_SIMS)
@@ -536,8 +657,16 @@ class AnswerRelevancyScene(CalcScene):
                     "Relevancy = (1/N) * sum(I(rel_i) * max(0, sim))",
                     WHITE,
                 ),
-                (rf"=\frac{{1}}{{3}}\left({terms}\right)", f"= (1/3) * ({terms_fb})", WHITE),
-                (rf"=\frac{{{tot:.2f}}}{{3}}=\mathbf{{{RELEVANCY:.4f}}}", f"= {tot:.2f} / 3 = {RELEVANCY:.4f}", YELLOW_B),
+                (
+                    rf"=\frac{{1}}{{3}}\left({terms}\right)",
+                    f"= (1/3) * ({terms_fb})",
+                    WHITE,
+                ),
+                (
+                    rf"=\frac{{{tot:.2f}}}{{3}}=\mathbf{{{RELEVANCY:.4f}}}",
+                    f"= {tot:.2f} / 3 = {RELEVANCY:.4f}",
+                    YELLOW_B,
+                ),
             ],
             y_top=-1.35,
             gap=0.8,
@@ -558,13 +687,40 @@ class AnswerQualityFactualScene(CalcScene):
 
     def construct(self) -> None:
         self.camera.background_color = BLACK
-        self.header("Answer Quality: Olgusal F1", "Uretilen cevap vs beklenen cevap -> TP / FP / FN")
+        self.header(
+            "Answer Quality: Olgusal F1",
+            "Uretilen cevap vs beklenen cevap -> TP / FP / FN",
+        )
 
-        tp = self.mchip(rf"TP={TP}\;\text{{(dogru ifade)}}", GREEN_B, w=3.6, h=0.7, fs=26, fill="#12241B")
-        fp = self.mchip(rf"FP={FP}\;\text{{(fazla / hatali)}}", RED_C, w=3.6, h=0.7, fs=26, fill="#2A1618")
-        fn = self.mchip(rf"FN={FN}\;\text{{(eksik ifade)}}", ORANGE, w=3.6, h=0.7, fs=26, fill="#2A2012")
+        tp = self.mchip(
+            rf"TP={TP}\;\text{{(dogru ifade)}}",
+            GREEN_B,
+            w=3.6,
+            h=0.7,
+            fs=26,
+            fill="#12241B",
+        )
+        fp = self.mchip(
+            rf"FP={FP}\;\text{{(fazla / hatali)}}",
+            RED_C,
+            w=3.6,
+            h=0.7,
+            fs=26,
+            fill="#2A1618",
+        )
+        fn = self.mchip(
+            rf"FN={FN}\;\text{{(eksik ifade)}}",
+            ORANGE,
+            w=3.6,
+            h=0.7,
+            fs=26,
+            fill="#2A2012",
+        )
         trio = VGroup(tp, fp, fn).arrange(RIGHT, buff=0.35).move_to([0, 1.7, 0])
-        self.play(LaggedStart(*[FadeIn(c, shift=DOWN * 0.15) for c in trio], lag_ratio=0.25), run_time=1.5)
+        self.play(
+            LaggedStart(*[FadeIn(c, shift=DOWN * 0.15) for c in trio], lag_ratio=0.25),
+            run_time=1.5,
+        )
         self.wait(0.2)
 
         l1 = self.reveal_lines(
@@ -592,7 +748,9 @@ class AnswerQualityFactualScene(CalcScene):
             fs=27,
         )
         self.box_result(l1[-1])
-        note = self.mlbl(r"\text{Accuracy}=F_1\qquad\text{Completeness}=\text{Recall}", GREY_B, fs=26).move_to([0, -3.1, 0])
+        note = self.mlbl(
+            r"\text{Accuracy}=F_1\qquad\text{Completeness}=\text{Recall}", GREY_B, fs=26
+        ).move_to([0, -3.1, 0])
         self.play(FadeIn(note), run_time=0.4)
         self.finish()
 
@@ -606,12 +764,32 @@ class AnswerCorrectnessScene(CalcScene):
 
     def construct(self) -> None:
         self.camera.background_color = BLACK
-        self.header("Answer Correctness", "Olgusal F1 (0.75) + anlamsal benzerlik (0.25)")
+        self.header(
+            "Answer Correctness", "Olgusal F1 (0.75) + anlamsal benzerlik (0.25)"
+        )
 
-        inputs = VGroup(
-            self.mchip(rf"F_{{1,\text{{factual}}}}={Q_F1:.4f}", GOLD_B, w=4.0, h=0.7, fs=28, fill="#162030"),
-            self.mchip(rf"\text{{sim}}(a,a_{{\text{{exp}}}})={SIM_A:.2f}", TEAL_B, w=4.4, h=0.7, fs=28, fill="#162030"),
-        ).arrange(RIGHT, buff=0.5).move_to([0, 1.9, 0])
+        inputs = (
+            VGroup(
+                self.mchip(
+                    rf"F_{{1,\text{{factual}}}}={Q_F1:.4f}",
+                    GOLD_B,
+                    w=4.0,
+                    h=0.7,
+                    fs=28,
+                    fill="#162030",
+                ),
+                self.mchip(
+                    rf"\text{{sim}}(a,a_{{\text{{exp}}}})={SIM_A:.2f}",
+                    TEAL_B,
+                    w=4.4,
+                    h=0.7,
+                    fs=28,
+                    fill="#162030",
+                ),
+            )
+            .arrange(RIGHT, buff=0.5)
+            .move_to([0, 1.9, 0])
+        )
         self.play(FadeIn(inputs, shift=DOWN * 0.15), run_time=0.8)
 
         l = self.reveal_lines(
@@ -645,9 +823,21 @@ class AnswerCorrectnessScene(CalcScene):
         x0 = -W / 2
         axis = Line([x0, -2.55, 0], [x0 + W, -2.55, 0], color=GREY_B)
         f_len, s_len = W * W_F * Q_F1, W * W_S * SIM_A
-        bar_f = Rectangle(width=f_len, height=0.35, fill_color=BLUE_B, fill_opacity=0.9, stroke_width=0)
+        bar_f = Rectangle(
+            width=f_len,
+            height=0.35,
+            fill_color=BLUE_B,
+            fill_opacity=0.9,
+            stroke_width=0,
+        )
         bar_f.move_to([x0 + f_len / 2, -2.55 + 0.3, 0])
-        bar_s = Rectangle(width=s_len, height=0.35, fill_color=TEAL_B, fill_opacity=0.9, stroke_width=0)
+        bar_s = Rectangle(
+            width=s_len,
+            height=0.35,
+            fill_color=TEAL_B,
+            fill_opacity=0.9,
+            stroke_width=0,
+        )
         bar_s.move_to([x0 + f_len + s_len / 2, -2.55 + 0.3, 0])
         t0 = self.lbl("0", GREY_B, 12).next_to(axis.get_start(), DOWN, buff=0.1)
         t1 = self.lbl("1", GREY_B, 12).next_to(axis.get_end(), DOWN, buff=0.1)
@@ -668,12 +858,21 @@ class NoiseSensitivityScene(CalcScene):
 
     def construct(self) -> None:
         self.camera.background_color = BLACK
-        self.header("Noise Sensitivity", "Alakasiz chunk eklenince kalite ne kadar dustu?")
+        self.header(
+            "Noise Sensitivity", "Alakasiz chunk eklenince kalite ne kadar dustu?"
+        )
 
         clean = VGroup(
             self.lbl("Temiz bağlam", GREEN_B, 15),
             self.chip("chunk_1 (ilgili)", GREEN_B, w=3.2, h=0.4, fs=13),
-            self.mchip(rf"Q_{{\text{{clean}}}}={Q_CLEAN:.4f}", GREEN_B, w=3.2, h=0.55, fs=26, fill="#12241B"),
+            self.mchip(
+                rf"Q_{{\text{{clean}}}}={Q_CLEAN:.4f}",
+                GREEN_B,
+                w=3.2,
+                h=0.55,
+                fs=26,
+                fill="#12241B",
+            ),
         ).arrange(DOWN, buff=0.12)
         noisy = VGroup(
             self.lbl("Gürültülü bağlam", RED_C, 15),
@@ -682,9 +881,20 @@ class NoiseSensitivityScene(CalcScene):
                 self.chip("noise_a (alakasiz)", RED_C, w=3.2, h=0.4, fs=13),
                 self.chip("noise_b (alakasiz)", RED_C, w=3.2, h=0.4, fs=13),
             ).arrange(DOWN, buff=0.07),
-            self.mchip(rf"Q_{{\text{{noisy}}}}={Q_NOISY:.4f}", RED_C, w=3.2, h=0.55, fs=26, fill="#2A1618"),
+            self.mchip(
+                rf"Q_{{\text{{noisy}}}}={Q_NOISY:.4f}",
+                RED_C,
+                w=3.2,
+                h=0.55,
+                fs=26,
+                fill="#2A1618",
+            ),
         ).arrange(DOWN, buff=0.12)
-        both = VGroup(clean, noisy).arrange(RIGHT, buff=1.2, aligned_edge=UP).move_to([0, 1.35, 0])
+        both = (
+            VGroup(clean, noisy)
+            .arrange(RIGHT, buff=1.2, aligned_edge=UP)
+            .move_to([0, 1.35, 0])
+        )
         self.play(FadeIn(clean, shift=RIGHT * 0.2), run_time=0.8)
         self.play(FadeIn(noisy, shift=LEFT * 0.2), run_time=0.8)
 
@@ -716,6 +926,8 @@ class NoiseSensitivityScene(CalcScene):
             fs=25,
         )
         self.box_result(lines[-1], color=ORANGE)
-        note = self.lbl("Dusuk = iyi (sistem gurultuye dayanikli)", GREY_B, fs=14).move_to([0, -3.35, 0])
+        note = self.lbl(
+            "Dusuk = iyi (sistem gurultuye dayanikli)", GREY_B, fs=14
+        ).move_to([0, -3.35, 0])
         self.play(FadeIn(note), run_time=0.4)
         self.finish()

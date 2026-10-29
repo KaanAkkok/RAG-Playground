@@ -44,11 +44,15 @@ Farklı dil modeli sağlayıcılarını ortak bir arayüzde soyutlar.
 
 - **`llm_factory.py` (`LLMClient`, `LLMFactory`):**
   - `LLMClient`: `get_client()`, `generate_response()` ve `generate_embeddings()` soyut metotlarını tanımlayan temel sınıftır.
-  - `LLMFactory`: `settings.LLM_PROVIDER` değerine göre (`azure`, `azure_openai`, `openai`, `openai_compatible`) ilgili istemci sınıfını dinamik olarak oluşturur.
+  - `LLMFactory`: `settings.LLM_PROVIDER` değerine göre (`azure`, `azure_openai`, `openai`, `openai_compatible`, `gemini`) ilgili istemci sınıfını dinamik olarak oluşturur.
+  - Servisler model isimlerini `settings.llm_models` üzerinden alır; bu property aktif provider'ın `{PREFIX}_{GÖREV}_DEPLOYMENT` değerlerini döndürür (örn. `gemini` için `GEMINI_INTENT_DEPLOYMENT`).
+  - İstekler provider'dan bağımsız `ChatRequest` / `EmbeddingRequest` şemalarıyla gönderilir, yanıtlar `LLMResponse` olarak döner (`schemas/llm_client_schema.py`). Her istemci bu şemayı `_build_chat_params()` / `_build_embedding_params()` ile kendi API formatına çevirir.
 - **`azure_client.py` (`AzureOpenAIClient`):**
   - `AsyncAzureOpenAI` kullanarak asenkron sohbet yanıtı (`chat.completions.create`) ve vektör (`embeddings.create`) üretir.
 - **`openai_client.py` (`OpenAIClient`):**
   - Standart OpenAI veya OpenAI uyumlu (`base_url` destekli) API'ler üzerinden asenkron yanıt ve embedding üretir.
+- **`gemini_client.py` (`GeminiClient`):**
+  - `google-genai` SDK'sı ile `generate_content` ve `embed_content` çağrıları yapar; system mesajlarını `system_instruction`'a, strict şemaları `response_json_schema`'ya çevirir.
 
 ---
 
@@ -78,7 +82,7 @@ Ham PDF dokümanlarını aranabilir ve zengin metaverili parçalara (`Citation`)
 
 Kullanıcı sorgusuyla en alakalı doküman parçalarını hibrit arama ve yeniden sıralama ile bulur.
 
-- **`embedding_service.py` (`EmbeddingService`, `AzureEmbeddingService`):**
+- **`embedding_service.py` (`EmbeddingService`, `LLMEmbeddingService`):**
   - Metin listelerini `EMBED_BATCH_SIZE` (`96`) büyüklüğünde gruplara bölerek asenkron vektör temsillerine dönüştürür.
 - **`bm25.py` (`BM25`):**
   - Türkçe karakter normalizasyonlu (`İ, I, ı -> i`) bellek içi (in-memory) **Okapi BM25** ($k_1=1.5, b=0.75$) indeksleme ve anahtar kelime arama motorudur.

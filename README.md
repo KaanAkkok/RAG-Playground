@@ -65,7 +65,7 @@ QDRANT_MEMORY_COLLECTION_NAME=Memories
    - PDF dokümanlarının dijital veya taranmış (OCR) olarak tespit edilip **Docling** ile Markdown formatına dönüştürülmesi (`DocumentExtractor`).
    - Başlık hiyerarşisini (*breadcrumb*) ve tablo bütünlüğünü koruyan **Semantik Parçalama (Semantic Chunking)** ve zengin metadata üretimi (`DocumentChunker`).
 2. **Retrieval (`rag_playground.retrieval`):**
-   - Batch destekli asenkron vektör üretimi (`AzureEmbeddingService`).
+   - Batch destekli, provider'dan bağımsız asenkron vektör üretimi (`LLMEmbeddingService`).
    - Kelime bazlı **BM25 (Sparse)** ve vektör bazlı **Qdrant (Dense)** aramalarını **Reciprocal Rank Fusion (RRF)** ile birleştiren **Hybrid Search** (`AsyncQdrantVectorDB`).
    - Aday parçaları soruyla ilgililiklerine göre 0–10 arasında puanlayıp filtreleyen **LLM-as-a-Reranker** (`RetrievalService`).
 3. **Assistant & Güvenlik (`rag_playground.assistant` & `rag_playground.core.security`):**

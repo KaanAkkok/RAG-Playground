@@ -5,6 +5,7 @@ from rag_playground.core.exceptions import EmbeddingError
 from rag_playground.core.logger import get_logger
 from rag_playground.core.settings import settings
 from rag_playground.llm.llm_factory import LLMClient
+from rag_playground.schemas.llm_client_schema import EmbeddingRequest
 
 logger = get_logger(__name__)
 
@@ -16,11 +17,11 @@ class EmbeddingService(ABC):
         pass
 
 
-class AzureEmbeddingService(EmbeddingService):
+class LLMEmbeddingService(EmbeddingService):
     def __init__(
         self,
         client: LLMClient,
-        deployment_name: str = settings.AZURE_OPENAI_EMBEDDING_DEPLOYMENT,
+        deployment_name: str = settings.llm_models.embedding,
         embed_batch_size: int = settings.EMBED_BATCH_SIZE,
     ):
         self.deployment_name = deployment_name
@@ -29,24 +30,21 @@ class AzureEmbeddingService(EmbeddingService):
         self.client = client
 
     def validate_config(self) -> None:
-        if not all([self.deployment_name, self.embed_batch_size]):
-            raise ValueError(
-                "Azure OpenAI configuration is incomplete. Please check your settings."
-            )
         if not self.deployment_name or not isinstance(self.deployment_name, str):
             raise ValueError(
-                "Azure OpenAI configuration model cannot be None or empty."
+                f"Embedding model for provider '{settings.LLM_PROVIDER}' "
+                "cannot be None or empty. Please check your settings."
             )
         if self.embed_batch_size is None or self.embed_batch_size <= 0:
             raise ValueError("Embed batch size must be a positive integer.")
 
-    async def _call_embedding_api(self, inputs: list[str] | str) -> list[list[float]]:
+    async def _call_embedding_api(self, inputs: list[str]) -> list[list[float]]:
         if not inputs or len(inputs) == 0:
             raise ValueError("Input list for embedding cannot be empty.")
 
         try:
             return await self.client.generate_embeddings(
-                model=self.deployment_name, input=inputs
+                EmbeddingRequest(model=self.deployment_name, input=inputs)
             )
         except Exception as e:
             logger.exception("Error generating embeddings")

@@ -1,9 +1,10 @@
 import hashlib
 import re
-import numpy as np
 import unicodedata
 from hashlib import sha256
 from pathlib import Path
+
+import numpy as np
 
 from rag_playground.core.exceptions import EmbeddingError
 from rag_playground.core.logger import get_logger
@@ -178,7 +179,8 @@ class DocumentChunker:
         if b <= 0:
             return sentences
         return [
-            " ".join(sentences[max(0, i - b) : i + b + 1]) for i in range(len(sentences))
+            " ".join(sentences[max(0, i - b) : i + b + 1])
+            for i in range(len(sentences))
         ]
 
     async def _semantic_split(self, sentences: list[str]) -> list[list[str]]:
@@ -193,7 +195,9 @@ class DocumentChunker:
             logger.exception(
                 "Error embedding sentences, falling back to size-based chunking"
             )
-            return self._add_overlap(self._merge_small_groups(self._pack_by_size(sentences)))
+            return self._add_overlap(
+                self._merge_small_groups(self._pack_by_size(sentences))
+            )
 
         distances = [
             (1 - cosine_similarity(embeddings[i], embeddings[i + 1]))
@@ -202,7 +206,7 @@ class DocumentChunker:
         threshold = float(
             np.percentile(
                 distances,
-                self.semantic_chunking_break_percentage*100,
+                self.semantic_chunking_break_percentage * 100,
             )
         )
 

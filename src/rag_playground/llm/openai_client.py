@@ -6,13 +6,16 @@ from rag_playground.core.exceptions import EmbeddingClientError, LLMClientError
 from rag_playground.core.logger import get_logger
 from rag_playground.core.settings import settings
 from rag_playground.llm.llm_factory import LLMClient
+from rag_playground.schemas.llm_client_schema import (
+    ChatRequest,
+    EmbeddingRequest,
+    LLMResponse,
+)
 
 logger = get_logger(__name__)
 
 
 class OpenAIClient(LLMClient):
-    """Client for OpenAI and providers exposing an OpenAI-compatible API."""
-
     def __init__(
         self,
         api_key: str | None = None,
@@ -27,6 +30,8 @@ class OpenAIClient(LLMClient):
         self.max_retries = (
             max_retries if max_retries is not None else settings.OPENAI_CHAT_MAX_RETRIES
         )
+        self.client = None
+        self.embedding_client = None
 
     @override
     def get_client(self, type: str | None = None) -> AsyncOpenAI:
@@ -51,17 +56,58 @@ class OpenAIClient(LLMClient):
             ) from exc
 
     @override
-    async def generate_response(self, **request_data: Any) -> Any:
+    def _build_chat_params(self, request: ChatRequest) -> dict[str, Any]:
+        params = request.model_dump(
+            include={
+                "model",
+                "messages",
+                "temperature",
+                "top_p",
+                "max_tokens",
+                "stop",
+                "seed",
+                "timeout",
+            },
+            exclude_none=True,
+        )
+        response_format = request.response_format
+        if response_format.type == "json_object":
+            params["response_format"] = {"type": "json_object"}
+        elif response_format.type == "json_schema":
+            params["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": response_format.name,
+                    "strict": response_format.strict,
+                    "schema": response_format.json_schema,
+                },
+            }
+        params.update(request.provider_options)
+        return params
+
+    @override
+    def _build_embedding_params(self, request: EmbeddingRequest) -> dict[str, Any]:
+        params = request.model_dump(
+            include={"model", "input", "dimensions"}, exclude_none=True
+        )
+        params.update(request.provider_options)
+        return params
+
+    @override
+    async def generate_response(self, request: ChatRequest) -> LLMResponse:
         llm_client = self.client
         if llm_client is None:
             llm_client = self.get_client(type="chat")
+            self.client = llm_client
         try:
-            response = await llm_client.chat.completions.create(**request_data)
+            response = await llm_client.chat.completions.create(
+                **self._build_chat_params(request)
+            )
             if not response or not response.choices:
                 raise LLMClientError(
                     "No response received from OpenAI-compatible provider"
                 )
-            return response
+            return LLMResponse(text=response.choices[0].message.content, raw=response)
         except LLMClientError:
             raise
         except Exception as exc:
@@ -73,12 +119,15 @@ class OpenAIClient(LLMClient):
             ) from exc
 
     @override
-    async def generate_embeddings(self, **request_data: Any) -> list[list[float]]:
+    async def generate_embeddings(self, request: EmbeddingRequest) -> list[list[float]]:
         embedding_client = self.embedding_client
         if embedding_client is None:
             embedding_client = self.get_client(type="embedding")
+            self.embedding_client = embedding_client
         try:
-            response = await embedding_client.embeddings.create(**request_data)
+            response = await embedding_client.embeddings.create(
+                **self._build_embedding_params(request)
+            )
             if not response or not response.data:
                 raise EmbeddingClientError(
                     "No embeddings received from OpenAI-compatible provider"

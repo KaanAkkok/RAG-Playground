@@ -1,5 +1,5 @@
-import re
 import json
+import re
 import unicodedata
 from typing import Literal
 
@@ -43,6 +43,11 @@ from rag_playground.schemas.guardrails_schema import (
     LLM_GUARDRAILS_FORMAT,
     GuardrailsResponseSchema,
 )
+from rag_playground.schemas.llm_client_schema import (
+    ChatRequest,
+    LLMMessage,
+    ResponseFormat,
+)
 
 logger = get_logger(__name__)
 
@@ -57,18 +62,22 @@ class GuardrailsService:
         llm_as_judge_enabled: bool = True,
         client: LLMClient | None = None,
         temperature: float | None = settings.GUARDRAILS_TEMPERATURE,
-        guardrails_deployment: str | None = settings.AZURE_OPENAI_GUARDRAILS_DEPLOYMENT,
+        guardrails_deployment: str | None = settings.llm_models.guardrails,
         llm_as_judge_prompt: str | None = LLM_AS_JUDGE_PROMPT,
         response_format: dict | None = LLM_GUARDRAILS_FORMAT,
     ):
         self.mode = mode
         self.regex_patterns_list = regex_patterns
-        self.proprietary_dictionary = set(proprietary_dictionary) if proprietary_dictionary else set()
+        self.proprietary_dictionary = (
+            set(proprietary_dictionary) if proprietary_dictionary else set()
+        )
         self.llm_as_judge_prompt = llm_as_judge_prompt
         self.guardrails_deployment = guardrails_deployment
         self.guardrails_client = client
         self.temperature = temperature
-        self.response_format = response_format
+        self.response_format = (
+            ResponseFormat(**response_format) if response_format else None
+        )
         self.llm_as_judge_enabled = llm_as_judge_enabled
         self.normalization_form: Literal["NFC", "NFD", "NFKC", "NFKD"] = (
             normalization_form
@@ -241,23 +250,27 @@ class GuardrailsService:
         return False, text
 
     async def _llm_call(
-        self, messages: list[dict], response_format: dict
+        self, messages: list[LLMMessage], response_format: ResponseFormat
     ) -> GuardrailsResponseSchema:
         if self.guardrails_client is None:
             raise ValueError("Guardrails client is not initialized.")
+        if self.guardrails_deployment is None:
+            raise ValueError("Guardrails deployment is not set.")
         if messages is None or not isinstance(messages, list):
             raise ValueError("Messages must be a non-empty list of dictionaries.")
-        if response_format is None or not isinstance(response_format, dict):
-            raise ValueError("Response format must be a non-empty dictionary.")
-        request = {
-            "model": self.guardrails_deployment,
-            "messages": messages,
-            "temperature": self.temperature,
-            "response_format": response_format,
-        }
+        if response_format is None or not isinstance(response_format, ResponseFormat):
+            raise ValueError(
+                "Response format must be a non-empty ResponseFormat object."
+            )
+        request = ChatRequest(
+            model=self.guardrails_deployment,
+            messages=messages,
+            temperature=self.temperature,
+            response_format=response_format,
+        )
         try:
-            response = await self.guardrails_client.generate_response(**request)
-            content = response.choices[0].message.content
+            response = await self.guardrails_client.generate_response(request)
+            content = response.text
             if not content:
                 raise ValueError("Judge model boş yanıt döndürdü.")
             data = json.loads(content)
@@ -284,7 +297,11 @@ class GuardrailsService:
         return answer
 
     async def llm_as_judge(
-        self, question: str, answer: str, citations: list[VectorRecord] | None, memory: list[dict[str, str]] | None = None
+        self,
+        question: str,
+        answer: str,
+        citations: list[VectorRecord] | None,
+        memory: list[dict[str, str]] | None = None,
     ) -> tuple[bool, str, str]:
         """
         Evaluates the answer for guardrail violations based on the provided question and citations.
