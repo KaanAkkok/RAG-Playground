@@ -32,17 +32,17 @@ class RetrievalService:
         reranker_active: bool = True,
         reranker: str = settings.llm_models.reranker,
         reranker_system_prompt: str = RERANK_SYSTEM_PROMPT,
-        temperature: float = settings.ASSISTANT_CHAT_TEMPERATURE,
+        temperature: float = settings.RERANKER_TEMPERATURE,
         rerank_passage_chars: int = settings.RERANK_PASSAGE_CHARS,
         min_rerank_score: int = settings.MIN_RERANK_SCORE,
         response_format: dict = LLM_RERANK_RESPONSE_FORMAT,
-        rerank_timeout: int = settings.RERANK_TIMEOUT,
+        timeout: int = settings.LLM_RESPONSE_TIMEOUT,
     ):
         self.retriever = client
         self.vector_db = vector_db
         self.reranker_active = reranker_active
         self.reranker = reranker
-        self.rerank_timeout = rerank_timeout
+        self.timeout = timeout
         self.reranker_system_prompt = reranker_system_prompt
         self.temperature = temperature
         self.rerank_passage_chars = rerank_passage_chars
@@ -75,7 +75,7 @@ class RetrievalService:
     async def index_citations(
         self,
         citations: list[Citation],
-        collection_name: str = settings.QDRANT_KNOWLEDGE_COLLECTION_NAME,
+        collection_name: str = settings.VECTORDB_KNOWLEDGE_COLLECTION_NAME,
     ) -> int:
         if not citations:
             return 0
@@ -88,7 +88,7 @@ class RetrievalService:
         return len(point_ids)
 
     async def is_collection_exists(
-        self, collection_name: str = settings.QDRANT_KNOWLEDGE_COLLECTION_NAME
+        self, collection_name: str = settings.VECTORDB_KNOWLEDGE_COLLECTION_NAME
     ) -> bool:
         try:
             return await self.vector_db.is_collection_exists(collection_name)
@@ -103,7 +103,7 @@ class RetrievalService:
     async def count(
         self,
         filter_dict: dict[str, Any],
-        collection_name: str = settings.QDRANT_KNOWLEDGE_COLLECTION_NAME,
+        collection_name: str = settings.VECTORDB_KNOWLEDGE_COLLECTION_NAME,
     ) -> int:
         try:
             count = await self.vector_db.count(
@@ -120,7 +120,7 @@ class RetrievalService:
         top_k: int = settings.TOP_K_CANDIDATES,
         limit: int = settings.FUSED_SEARCH_CANDIDATES,
         candidate_k: int = settings.SEARCH_CANDIDATES,
-        collection_name: str = settings.QDRANT_KNOWLEDGE_COLLECTION_NAME,
+        collection_name: str = settings.VECTORDB_KNOWLEDGE_COLLECTION_NAME,
     ) -> list[Citation]:
         cleaned_query = query.strip() if query else ""
         if not cleaned_query:
@@ -166,7 +166,7 @@ class RetrievalService:
             temperature=self.temperature,
             response_format=self.response_format,
             messages=messages,
-            timeout=self.rerank_timeout,
+            timeout=self.timeout,
         )
         try:
             response = await self.retriever.generate_response(request)

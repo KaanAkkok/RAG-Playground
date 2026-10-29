@@ -7,8 +7,17 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 class LLMMessage(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    role: Literal["system", "user", "assistant"]
+    role: Literal["system", "user", "assistant"] | str
     content: str
+
+    @field_validator("role", mode="before")
+    @classmethod
+    def validate_role(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            value = value.lower()
+            if value in {"system", "user", "assistant"}:
+                return value
+        raise ValueError("role must be one of 'system', 'user', or 'assistant'")
 
 
 class ResponseFormat(BaseModel):
@@ -74,6 +83,7 @@ class EmbeddingRequest(BaseModel):
     model: str
     input: list[str] = Field(min_length=1)
     dimensions: int | None = Field(default=None, gt=0)
+    timeout: float | None = Field(default=None, gt=0)
     task_type: str | None = (
         None  # Sadece Gemini kullanır (örn. "RETRIEVAL_DOCUMENT", "RETRIEVAL_QUERY")
     )

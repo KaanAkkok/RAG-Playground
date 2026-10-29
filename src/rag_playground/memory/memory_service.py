@@ -75,11 +75,12 @@ class MemoryService(MemoryIService):
         long_term_batch_size: int = settings.LONG_TERM_MEMORY_BATCH_SIZE,
         long_term_confidence_threshold: float = settings.LONG_TERM_MEMORY_CONFIDENCE_THRESHOLD,
         long_term_min_score: float = settings.LONG_TERM_MEMORY_MIN_SCORE,
-        collection_name: str = settings.QDRANT_MEMORY_COLLECTION_NAME,
-        temperature: float = settings.ASSISTANT_CHAT_TEMPERATURE,
+        collection_name: str = settings.VECTORDB_MEMORY_COLLECTION_NAME,
+        temperature: float = settings.MEMORY_TEMPERATURE,
         memory_deployment: str = settings.llm_models.memory,
         system_prompt: str = MEMORY_SYSTEM_PROMPT,
         memory_response_format: dict = LLM_MEMORY_RESPONSE_FORMAT,
+        timeout: int = settings.LLM_RESPONSE_TIMEOUT,
     ):
         self.user_id = user_id  # long-term memories are stored and searched per user
         self.max_history_tokens = max_history_tokens
@@ -93,6 +94,7 @@ class MemoryService(MemoryIService):
         self.temperature = temperature
         self.memory_deployment = memory_deployment
         self.system_prompt = system_prompt
+        self.timeout = timeout
         self.memory_response_format = ResponseFormat(**memory_response_format)
         self.short_term_memory: list[dict[str, str]] = []
         self._pending_messages: list[dict[str, str]] = []
@@ -147,6 +149,7 @@ class MemoryService(MemoryIService):
             ],
             temperature=self.temperature,
             response_format=self.memory_response_format,
+            timeout=self.timeout,
         )
         try:
             response = await self.memory_extractor.generate_response(request)

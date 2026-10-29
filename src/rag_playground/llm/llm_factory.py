@@ -74,6 +74,5 @@ class LLMFactory:
         cls.register("azure", AzureOpenAIClient)
         cls.register("azure_openai", AzureOpenAIClient)
         cls.register("openai", OpenAIClient)
-        cls.register("openai_compatible", OpenAIClient)
         cls.register("gemini", GeminiClient)
         cls._defaults_loaded = True

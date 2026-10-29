@@ -4,7 +4,11 @@ from rag_playground.core.settings import settings
 from rag_playground.llm.llm_factory import LLMClient
 from rag_playground.prompts.prompts import INTENT_SYSTEM_PROMPT
 from rag_playground.schemas.intent_schema import LLM_INTENT_FORMAT, Intent
-from rag_playground.schemas.llm_client_schema import ChatRequest
+from rag_playground.schemas.llm_client_schema import (
+    ChatRequest,
+    LLMMessage,
+    ResponseFormat,
+)
 
 logger = get_logger(__name__)
 
@@ -15,14 +19,14 @@ class IntentClassifier:
         client: LLMClient,
         system_prompt: str = INTENT_SYSTEM_PROMPT,
         classifier_model: str = settings.llm_models.intent,
-        temperature: float = settings.ASSISTANT_INTENT_TEMPERATURE,
+        temperature: float = settings.INTENT_TEMPERATURE,
         response_format: dict = LLM_INTENT_FORMAT,
-        timeout: int = settings.INTENT_TIMEOUT,
+        timeout: int = settings.LLM_RESPONSE_TIMEOUT,
     ):
         self.system_prompt = system_prompt
         self.classifier_model = classifier_model
         self.temperature = temperature
-        self.response_format = response_format
+        self.response_format = ResponseFormat(**response_format)
         self.timeout = timeout
         self.classifier = client
 
@@ -40,6 +44,7 @@ class IntentClassifier:
         if history:
             messages.extend(history)
         messages.append({"role": "user", "content": cleaned_query})
+        messages = [LLMMessage(**msg) for msg in messages]
         request = ChatRequest(
             model=self.classifier_model,
             messages=messages,

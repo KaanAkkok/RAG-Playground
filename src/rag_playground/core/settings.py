@@ -1,7 +1,8 @@
 import os
 from pathlib import Path
+from typing import Literal
 
-from pydantic import AliasChoices, BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -90,20 +91,15 @@ class Settings(BaseSettings):
     GEMINI_GENERATION_EVAL_DEPLOYMENT: str = ""
     GEMINI_GUARDRAILS_DEPLOYMENT: str = ""
 
-    # Provider'dan bağımsız görev timeout'ları (saniye); eski AZURE_* isimleri de okunur
-    INTENT_TIMEOUT: int = Field(
-        default=10,
-        validation_alias=AliasChoices("INTENT_TIMEOUT", "AZURE_OPENAI_INTENT_TIMEOUT"),
-    )
-    RERANK_TIMEOUT: int = Field(
-        default=30,
-        validation_alias=AliasChoices("RERANK_TIMEOUT", "AZURE_OPENAI_RERANK_TIMEOUT"),
-    )
+    LLM_RESPONSE_TIMEOUT: int = 30
+    EMBEDDING_TIMEOUT: int = 60
 
-    ASSISTANT_CHAT_TEMPERATURE: float = 0.0
-    ASSISTANT_INTENT_TEMPERATURE: float = 0.0
-    EVALUATION_CHAT_TEMPERATURE: float = 0.0
-    GUARDRAILS_TEMPERATURE: float = 0.0
+    CHAT_TEMPERATURE: float = Field(default=0.4, ge=0.0, le=2.0)
+    INTENT_TEMPERATURE: float = Field(default=0.2, ge=0.0, le=2.0)
+    RERANKER_TEMPERATURE: float = Field(default=0.0, ge=0.0, le=2.0)
+    MEMORY_TEMPERATURE: float = Field(default=0.0, ge=0.0, le=2.0)
+    EVALUATION_TEMPERATURE: float = Field(default=0.0, ge=0.0, le=2.0)
+    GUARDRAILS_TEMPERATURE: float = Field(default=0.0, ge=0.0, le=2.0)
 
     SUPPORTED_FILE_TYPES: list[str] = [".pdf"]
     RAW_DOCUMENTS_DIR: str = (
@@ -115,7 +111,16 @@ class Settings(BaseSettings):
     EVALUATION_FILE: str = (
         PROJECT_ROOT / "data" / "evaluation" / "ground_truth.json"
     ).as_posix()
-    ANIMATIONS_DIR: str = (PROJECT_ROOT / "data" / "animations").as_posix()
+    ANIMATIONS_DIR: str = (
+        PROJECT_ROOT / "data" / "animations"
+    ).as_posix()
+    EVAL_SNAPSHOT_DIR: str = (
+        PROJECT_ROOT / "data" / "evaluation" / "snapshots"
+    ).as_posix()
+    RETRIEVAL_EVALUATION_LEVEL: Literal[1, 2] = Field(
+        default=2, description="1: passage-level, 2: document-level"
+    )
+    EVAL_SNAPSHOT_PATH: str = Path(f"{EVAL_SNAPSHOT_DIR}/EVALUATION_SNAPSHOT.snapshot").as_posix()
     EMBED_BATCH_SIZE: int = 96
     MIN_CHUNK_CHARS: int = 260
     MAX_CHUNK_CHARS: int = 700
@@ -151,8 +156,18 @@ class Settings(BaseSettings):
     QDRANT_HOST: str = ""
     QDRANT_PORT: int = 6333
     QDRANT_API_KEY: str | None = None
-    QDRANT_KNOWLEDGE_COLLECTION_NAME: str = "Documents"
-    QDRANT_MEMORY_COLLECTION_NAME: str = "Memories"
+    VECTORDB_KNOWLEDGE_COLLECTION_NAME: str = "Documents"
+    VECTORDB_MEMORY_COLLECTION_NAME: str = "Memories"
+    VECTORDB_EVALUATION_COLLECTION_NAME: str = "Evaluation"
+
+
+    @model_validator(mode="after")
+    def be_sure_dirs(self):
+        os.makedirs(self.RAW_DOCUMENTS_DIR, exist_ok=True)
+        os.makedirs(self.SAVED_DOCUMENTS_DIR, exist_ok=True)
+        os.makedirs(self.ANIMATIONS_DIR, exist_ok=True)
+        os.makedirs(self.EVAL_SNAPSHOT_DIR, exist_ok=True)
+        return self
 
     @property
     def llm_models(self) -> LLMModels:
