@@ -28,7 +28,9 @@ _TEXT_BIRTH_DATE_RE = re.compile(
     r"(?i)\b(?:do[gğ]um\s*tarihi|do[gğ]um\s*g[uü]n[uü])\s*[:=]?\s*\d{1,2}[./-]\d{1,2}[./-]\d{2,4}\b"
 )
 _TEXT_NAME_RE = re.compile(
-    r"(?i)\b(?:ad[iı]m|ismim|ad[iı]\s*soyad[iı]m|isim\s*soyisim|soyad[iı]m)\s*[:=]?\s+[A-ZÇĞİÖŞÜ][A-ZÇĞİÖŞÜa-zçğıöşü'-]+(?:\s+[A-ZÇĞİÖŞÜ][A-ZÇĞİÖŞÜa-zçğıöşü'-]+){0,3}"
+    r"\b(?i:ad[iı]m|ismim|ad[iı]\s*soyad[iı]m|isim\s*soyisim|soyad[iı]m)"
+    r"\s*[:=]?\s+[A-ZÇĞİÖŞÜ][A-ZÇĞİÖŞÜa-zçğıöşü'-]+"
+    r"(?:\s+[A-ZÇĞİÖŞÜ][A-ZÇĞİÖŞÜa-zçğıöşü'-]+){0,3}",
 )
 _TEXT_ADDRESS_RE = re.compile(
     r"(?i)\b(?:adresim|ikamet\s*adresim|ev\s*adresim)\s*[:=]?\s*[^\n.!?]{3,160}"
