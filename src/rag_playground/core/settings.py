@@ -44,7 +44,7 @@ class LLMModels(BaseModel):
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=PROJECT_ROOT / ".env",
         extra="ignore",
     )
 
@@ -153,6 +153,9 @@ class Settings(BaseSettings):
     LONG_TERM_MEMORY_CONFIDENCE_THRESHOLD: float = Field(default=0.7, ge=0.0, le=1.0)
     LONG_TERM_MEMORY_MIN_SCORE: float = Field(default=0.5, ge=0.0, le=1.0)
 
+    QDRANT_MODE: Literal["local", "memory", "remote"] = "local"
+    QDRANT_PATH: str = "./qdrant_storage"
+    QDRANT_DIR: str = Path(QDRANT_PATH).resolve().as_posix()
     QDRANT_HOST: str = ""
     QDRANT_PORT: int = 6333
     QDRANT_API_KEY: str | None = None
@@ -167,6 +170,7 @@ class Settings(BaseSettings):
         os.makedirs(self.SAVED_DOCUMENTS_DIR, exist_ok=True)
         os.makedirs(self.ANIMATIONS_DIR, exist_ok=True)
         os.makedirs(self.EVAL_SNAPSHOT_DIR, exist_ok=True)
+        os.makedirs(self.QDRANT_DIR, exist_ok=True)
         return self
 
     @property

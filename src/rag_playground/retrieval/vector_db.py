@@ -3,7 +3,7 @@ import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import Any, override
+from typing import Any, ClassVar, override
 
 import aiofiles
 import httpx2
@@ -112,12 +112,16 @@ class VectorDB(ABC):
 
 
 class AsyncQdrantVectorDB(VectorDB):
+    _local_clients: ClassVar[dict[str, AsyncQdrantClient]] = {}
+
     def __init__(
         self,
         embedder: EmbeddingService,
         host: str = settings.QDRANT_HOST,
         port: int = settings.QDRANT_PORT,
         api_key: str | None = settings.QDRANT_API_KEY,
+        mode: str = settings.QDRANT_MODE,
+        path: str = settings.QDRANT_PATH,
         bm25_k1: float = 1.5,
         bm25_b: float = 0.75,
         upsert_batch_size: int = settings.VECTORDB_UPSERT_BATCH_SIZE,
@@ -125,6 +129,8 @@ class AsyncQdrantVectorDB(VectorDB):
         self.host = host
         self.port = port
         self.api_key = api_key or None
+        self.mode = mode
+        self.path = path
         self.embedder = embedder
         self.bm25_k1 = bm25_k1
         self.bm25_b = bm25_b
@@ -137,6 +143,15 @@ class AsyncQdrantVectorDB(VectorDB):
 
     @override
     def _initialize_client(self) -> AsyncQdrantClient:
+        if self.mode == "memory":
+            return AsyncQdrantClient(location=":memory:")
+        if self.mode == "local":
+            path = str(Path(self.path).resolve())
+            if path not in self._local_clients:
+                self._local_clients[path] = AsyncQdrantClient(path=path)
+            return self._local_clients[path]
+        if self.mode != "remote":
+            raise ValueError(f"Unsupported Qdrant mode: {self.mode}")
         return AsyncQdrantClient(url=self._get_url(), api_key=self.api_key)
 
     def _get_url(self) -> str:
@@ -464,6 +479,12 @@ class AsyncQdrantVectorDB(VectorDB):
         self._validate_str_input(snapshot_file_path)
         if api_key is not None and api_key.strip() == "":
             raise ValueError("API key must be a non-empty string if provided.")
+        if self.mode != "remote":
+            logger.warning(
+                "Loading Qdrant server snapshots is only supported in remote mode; "
+                "local and memory modes do not support snapshot archives."
+            )
+            return False
         url = (
             f"{self._get_url()}/collections/{collection_name}/snapshots/upload"
         )

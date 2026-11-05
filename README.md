@@ -71,6 +71,8 @@ GEMINI_MEMORY_DEPLOYMENT=
 GEMINI_GENERATION_EVAL_DEPLOYMENT=
 GEMINI_GUARDRAILS_DEPLOYMENT=
 
+QDRANT_MODE=local
+QDRANT_PATH=./qdrant_storage
 QDRANT_HOST=localhost
 QDRANT_PORT=6333
 QDRANT_API_KEY=
@@ -110,4 +112,3 @@ VECTORDB_EVAL_COLLECTION_NAME=Evaluation
 ## Detaylı Dokümantasyon
 
 Mimari akış, tüm modüllerin, sınıfların, veri modellerinin ve yapılandırma ayarlarının detaylı açıklamaları için lütfen **[DOCUMENTATION.md](./DOCUMENTATION.md)** dosyasına bakın.
-

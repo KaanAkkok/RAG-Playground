@@ -164,6 +164,12 @@ async def initilize_evaluation_vector_db(
     snapshot_file_path: str = settings.EVAL_SNAPSHOT_PATH,
     chunk_size: int = 5
 ) -> None:
+    if settings.QDRANT_MODE != "remote":
+        logger.warning(
+            "Evaluation snapshot loading requires QDRANT_MODE=remote. "
+            "Skipping the server snapshot in local mode."
+        )
+        return
     client = LLMFactory.create()
     embedder = LLMEmbeddingService(client=client)
     vector_db = AsyncQdrantVectorDB(embedder=embedder)
