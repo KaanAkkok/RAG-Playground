@@ -10,22 +10,23 @@ Ek olarak, Notebook üzerinde her adımın nasıl çalıştığını ayrıntıl�
 
 ### 1. Gereksinimler
 - **Python:** `3.12+`
-- **Paket Yöneticisi:** [`uv`](https://docs.astral.sh/uv/) (önerilen) veya `pip`
+- **Paket Yöneticisi:** `pip` (alternatif olarak [`uv`](https://docs.astral.sh/uv/))
 - **Vektör Veritabanı:** **Qdrant** (varsayılan port: `6333`)
 - **OCR (Opsiyonel):** Taranmış PDF dokümanları için `Tesseract OCR` (`eng`, `tur` dil paketleri)
 
 ### 2. Bağımlılıkların Yüklenmesi
 
-Proje kök dizininde `uv` kullanarak sanal ortamı ve bağımlılıkları kurun:
+Proje kök dizininde `pip` kullanarak bağımlılıkları kurun:
+
+```bash
+python -m pip install -r requirements.txt
+python -m pip install --no-deps -e .
+```
+
+Alternatif olarak `uv` ile sanal ortamı ve bağımlılıkları kurabilirsiniz:
 
 ```bash
 uv sync
-```
-
-Veya `pip` ile geliştirici modunda yükleyin:
-
-```bash
-pip install -e .
 ```
 
 ### 3. Ortam Değişkenleri (`.env`)
