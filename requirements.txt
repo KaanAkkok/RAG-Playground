@@ -1,0 +1,13 @@
+openai>=3.28.0
+docling-slim[format-pdf-docling,models-local]>=2.136.0
+pdfplumber>=0.11.10
+pydantic>=2.14.0
+pydantic-settings>=2.0.0
+qdrant-client>=1.19.1
+aiofiles>=25.1.0
+torch>=2.2.2
+torchvision>=0.29.1
+rtree>=1.4.1
+opencv-python-headless>=5.0.0.93
+google-genai>=2.33.0
+manim>=0.22.0
