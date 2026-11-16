@@ -11,3 +11,6 @@ rtree>=1.4.1
 opencv-python-headless>=5.0.0.93
 google-genai>=2.33.0
 manim>=0.22.0
+jupyterlab>=4.0.0
+notebook>=7.0.0
+ipykernel>=6.0.0
